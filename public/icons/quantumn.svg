@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Outer orbit ring -->
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#7C8DA6" stroke-width="6" opacity="0.5"/>
+  <!-- Accent orbit arc -->
+  <path d="M64 16 A48 48 0 0 1 112 64" fill="none" stroke="#10B981" stroke-width="6" stroke-linecap="round"/>
+  <!-- Electron (accent dot) -->
+  <circle cx="98" cy="30" r="6" fill="#10B981"/>
+
+  <!-- Inner Q ring -->
+  <circle cx="64" cy="64" r="28" fill="none" stroke="#E5E7EB" stroke-width="8"/>
+  <!-- Q tail -->
+  <path d="M84 76 L96 88" fill="none" stroke="#E5E7EB" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Optional center glow -->
+  <circle cx="64" cy="64" r="4" fill="#E5E7EB" opacity="0.8"/>
+</svg>

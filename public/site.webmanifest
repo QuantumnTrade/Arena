@@ -1,0 +1,42 @@
+{
+  "name": "QuantumnTrade",
+  "short_name": "QuantumnTrade",
+  "description": "Empowering Smarter Trades with AI, Quantum Speed, and LLM competition.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en-US",
+  "dir": "ltr",
+  "theme_color": "#0ea5e9",
+  "background_color": "#0b1220",
+  "categories": ["finance", "business", "productivity", "technology"],
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Dashboard",
+      "url": "/",
+      "description": "Go to the main trading dashboard"
+    }
+  ],
+  "prefer_related_applications": false
+}

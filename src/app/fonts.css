@@ -1,0 +1,48 @@
+/* Font Konnect */
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectRegular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectLight.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectSemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectBold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Konnect';
+  src: url('/fonts/konnect/KonnectItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

@@ -1,0 +1,277 @@
+{
+  "success": true,
+  "message": "Successfully connected to ASTER API",
+  "data": {
+    "connection": {
+      "status": "connected",
+      "serverTime": "2025-10-24T15:36:41.022Z",
+      "localTime": "2025-10-24T15:36:42.767Z",
+      "timeDiff": 1745
+    },
+    "autoTransfer": {
+      "executed": false,
+      "message": "Auto-transfer not available. Please transfer BNB manually via ASTER dashboard (Wallet → Transfer → Spot to Futures)"
+    },
+    "account": {
+      "totalBalance": 0,
+      "availableBalance": 0,
+      "canTrade": false,
+      "assets": {
+        "USDT": {
+          "available": 0,
+          "total": 0
+        },
+        "BNB": {
+          "available": 0,
+          "total": 0
+        }
+      },
+      "multiAssetsMode": {
+        "enabled": true,
+        "note": "BNB can be used as margin for USDT pairs",
+        "error": null
+      },
+      "allBalances": [
+        {
+          "asset": "APX",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "CDL",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "FBTC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "BONUSUSD",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "CAKE",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "WBETH",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "BTC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "TWT",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "SOLVBTC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USDCE",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "FORM",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "LISUSD",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USDBC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "STONE",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "LISTA",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "RSETH",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "ASTER",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "JLP",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "SOL",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "BNB",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "ETH",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USDF",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USDT",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "CUSDT",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "PUMPBTC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USD1",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "USDC",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "ASBNB",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "SLISBNB",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "VUSDT",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "BUSD",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        },
+        {
+          "asset": "AFEE",
+          "balance": 0,
+          "availableBalance": 0,
+          "crossWalletBalance": 0,
+          "unrealizedPnl": 0
+        }
+      ],
+      "error": null
+    },
+    "positions": {
+      "active": [],
+      "totalPositions": 0,
+      "totalExposure": 0,
+      "totalUnrealizedPnl": 0,
+      "positionsError": null
+    },
+    "summary": {
+      "isReady": true,
+      "canTrade": false,
+      "warnings": [
+        "No available balance for trading"
+      ]
+    }
+  }
+}

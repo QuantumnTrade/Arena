@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+@layer base {
+  .font-konnect {
+    font-family: 'Konnect', sans-serif;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Konnect', sans-serif;
+}
+
+/* Flash animasi untuk nilai naik/turun seperti trading tick */
+@keyframes flash-up {
+  0% {
+    background-color: rgba(34, 197, 94, 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.flash-up {
+  animation: flash-up 800ms ease-out;
+}
+
+@keyframes flash-down {
+  0% {
+    background-color: rgba(239, 68, 68, 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.flash-down {
+  animation: flash-down 800ms ease-out;
+}
+
+/* Digit rolling animation support */
+.digits-tabular {
+  font-variant-numeric: tabular-nums;
+}
+.digit-roll {
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  vertical-align: text-bottom;
+}
+.digit-roll-inner {
+  display: block;
+  transition: transform 450ms cubic-bezier(0.2, 0.7, 0, 1);
+  will-change: transform;
+}
+.digit-roll-inner > span {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+.digit-static {
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+  vertical-align: text-bottom;
+}
