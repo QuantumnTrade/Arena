@@ -9,7 +9,7 @@ import type {
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const TICKER_PATH = process.env.NEXT_PUBLIC_TICKER_PATH || "/api/ticker";
 const INDICATOR_PATH =
-  process.env.NEXT_PUBLIC_INDICATORS_PATH || "/api/indicators";
+  process.env.NEXT_PUBLIC_INDICATORS_PATH || "/api/market-snapshot";
 const SERIES_PATH =
   process.env.NEXT_PUBLIC_TIMESERIES_PATH || "/api/timeseries";
 
@@ -78,10 +78,49 @@ export async function fetchTicker(symbol: string): Promise<Ticker> {
 }
 
 export async function fetchIndicators(symbol: string): Promise<Indicators> {
-  // 1) Prefer internal server route that computes from public exchange klines
+  // 1) Fetch snapshot and parse interval 1m
   try {
-    const localUrl = `${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`; // e.g., /api/indicators
-    return await fetchJSON<Indicators>(localUrl);
+    const localUrl = `${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`; // e.g., /api/market-snapshot
+    const snapshot = await fetchJSON<any>(localUrl);
+
+    // Support both object and array responses
+    const pickSnapshot = (data: any) => {
+      if (Array.isArray(data)) {
+        return (
+          data.find(
+            (d) => (d.symbol || "").toUpperCase() === symbol.toUpperCase()
+          ) || data[0]
+        );
+      }
+      return data;
+    };
+
+    const snap = pickSnapshot(snapshot);
+    const intervals = snap?.intervals || {};
+    const i1m =
+      intervals["1m"] || intervals["1M"] || intervals["oneMinute"] || null;
+
+    if (!i1m) throw new Error("Snapshot missing 1m interval");
+
+    // Normalize potential field names from 1m payload
+    const macdValue =
+      typeof i1m.macd === "number"
+        ? i1m.macd
+        : typeof i1m.macd?.value === "number"
+        ? i1m.macd.value
+        : undefined;
+
+    return {
+      sma1m: i1m.sma ?? i1m.sma1m ?? 0,
+      ema1m: i1m.ema ?? i1m.ema1m ?? 0,
+      rsi: i1m.rsi,
+      macd: macdValue,
+      atr: i1m.atr,
+      ao: i1m.ao,
+      vol: i1m.volume ?? i1m.vol,
+      obv: i1m.obv,
+      sup: i1m.support ?? i1m.sup,
+    };
   } catch (err) {
     // continue to local dummy
   }
@@ -98,6 +137,34 @@ export async function fetchIndicators(symbol: string): Promise<Indicators> {
     obv: undefined,
     sup: undefined,
   };
+}
+
+/**
+ * Fetch full market snapshot for a symbol
+ * Returns object containing { symbol, price, data_timestamp|timestamp, intervals }
+ * without altering server route shape.
+ */
+export async function fetchMarketSnapshot(symbol: string): Promise<any> {
+  const url = `${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
+  try {
+    const data = await fetchJSON<any>(url);
+    if (Array.isArray(data)) {
+      return (
+        data.find(
+          (d) => (d.symbol || "").toUpperCase() === symbol.toUpperCase()
+        ) || data[0]
+      );
+    }
+    return data;
+  } catch (err) {
+    // Minimal fallback structure to keep consumer robust
+    return {
+      symbol,
+      price: 0,
+      data_timestamp: new Date().toISOString(),
+      intervals: { "1m": {} },
+    };
+  }
 }
 
 export async function fetchTimeseries(
@@ -155,15 +222,23 @@ export async function fetchBalanceHistory(
   }
 
   try {
-    const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const startTime = new Date(
+      Date.now() - hours * 60 * 60 * 1000
+    ).toISOString();
     const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_balance_history?timestamp=gte.${startTime}&select=agent_id,timestamp,balance&order=timestamp.asc`;
-    
-    const data: Array<{ agent_id: string; timestamp: string; balance: number }> = 
-      await fetchJSON(url, { headers: quantumSupabaseHeaders() });
+
+    const data: Array<{
+      agent_id: string;
+      timestamp: string;
+      balance: number;
+    }> = await fetchJSON(url, { headers: quantumSupabaseHeaders() });
 
     // Group by agent_id
-    const grouped: Record<string, Array<{ timestamp: string; balance: number }>> = {};
-    
+    const grouped: Record<
+      string,
+      Array<{ timestamp: string; balance: number }>
+    > = {};
+
     for (const item of data) {
       if (!grouped[item.agent_id]) {
         grouped[item.agent_id] = [];
@@ -176,7 +251,7 @@ export async function fetchBalanceHistory(
 
     return grouped;
   } catch (err) {
-    console.error('Failed to fetch balance history:', err);
+    console.error("Failed to fetch balance history:", err);
     return {};
   }
 }
