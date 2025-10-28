@@ -11,7 +11,8 @@ export interface MarketSnapshot {
   symbol: string;
   price: number;
   indicators?: any;
-  timeframes?: any;
+  intervals?: any; // Full intervals data from API
+  timeframes?: any; // Deprecated, kept for backward compatibility
   timestamp: string;
 }
 
@@ -59,6 +60,7 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
           obv: i1m.obv,
           sup: i1m.support ?? i1m.sup,
         },
+        intervals: snapshot?.intervals, // Pass full intervals data to AI
         timestamp:
           snapshot?.data_timestamp ||
           snapshot?.timestamp ||
@@ -122,6 +124,7 @@ export async function fetchMarketDataForSymbol(
         obv: i1m.obv,
         sup: i1m.support ?? i1m.sup,
       },
+      intervals: snapshot?.intervals, // Pass full intervals data to AI
       timestamp:
         snapshot?.data_timestamp ||
         snapshot?.timestamp ||

@@ -259,22 +259,50 @@ function buildUserPrompt(
 
   // Add market data for each symbol
   marketData.forEach((market) => {
-    prompt += `${market.symbol} PRICE: $${market.price.toFixed(2)}\n`;
+    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    prompt += `${market.symbol} - Current Price: $${market.price.toFixed(2)}\n`;
+    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    if (market.indicators) {
+    // Check for intervals (actual field from API)
+    const intervals = (market as any).intervals || market.timeframes;
+    
+    if (intervals) {
+      // Define timeframe order for consistent display
+      const timeframeOrder = ['1m', '5m', '15m', '1h', '4h'];
+      
+      timeframeOrder.forEach((tf) => {
+        const tfData = intervals[tf];
+        if (tfData) {
+          prompt += `📊 ${tf.toUpperCase()} Timeframe:\n`;
+          prompt += `   Price: $${tfData.price?.toFixed(2) || market.price.toFixed(2)}\n`;
+          prompt += `   RSI: ${tfData.rsi?.toFixed(2)} (${tfData.rsi_state})\n`;
+          prompt += `   MACD: ${tfData.macd?.toFixed(2)} (${tfData.macd_state})\n`;
+          prompt += `   EMA: $${tfData.ema?.toFixed(2)}, SMA: $${tfData.sma?.toFixed(2)} (${tfData.ema_cross})\n`;
+          prompt += `   Volume: ${tfData.volume?.toFixed(0)} (${tfData.volume_state})\n`;
+          prompt += `   Bollinger: Upper=$${tfData.bollinger_upper?.toFixed(2)}, Mid=$${tfData.bollinger_middle?.toFixed(2)}, Lower=$${tfData.bollinger_lower?.toFixed(2)} (${tfData.bollinger_position})\n`;
+          prompt += `   Support: $${tfData.support?.toFixed(2)}, Resistance: $${tfData.resistance?.toFixed(2)}\n`;
+          prompt += `   Stochastic K/D: ${tfData.stochastic_k?.toFixed(2)}/${tfData.stochastic_d?.toFixed(2)} (${tfData.stochastic_state})\n`;
+          prompt += `   ATR: ${tfData.atr?.toFixed(2)}, AO: ${tfData.ao?.toFixed(2)} (${tfData.ao_state})\n`;
+          prompt += `   OBV: ${tfData.obv?.toFixed(0)} (${tfData.obv_state})\n`;
+          
+          // Add price history for trend analysis
+          if (tfData.mid_prices && tfData.mid_prices.length > 0) {
+            const prices = tfData.mid_prices.slice(-5); // Last 5 prices
+            prompt += `   Recent Prices: ${prices.map((p: number) => '$' + p.toFixed(2)).join(' → ')}\n`;
+          }
+          
+          prompt += `\n`;
+        }
+      });
+    } else if (market.indicators) {
+      // Fallback to old indicators format if intervals not available
       prompt += `Indicators:\n`;
       Object.entries(market.indicators).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           prompt += `  - ${key}: ${value}\n`;
         }
       });
-    }
-
-    if (market.timeframes) {
-      prompt += `Timeframes:\n`;
-      Object.entries(market.timeframes).forEach(([tf, data]) => {
-        prompt += `  - ${tf}: ${JSON.stringify(data)}\n`;
-      });
+      prompt += `\n`;
     }
 
     prompt += `\n`;
