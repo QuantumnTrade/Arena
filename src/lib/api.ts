@@ -69,13 +69,7 @@ export async function fetchTicker(symbol: string): Promise<Ticker> {
     const url = `${BASE_URL}${TICKER_PATH}?symbol=${encodeURIComponent(
       symbol
     )}`;
-    try {
-      const t = await fetchJSON<Ticker>(url);
-      // Validate price
-      if (t && Number.isFinite(t.price) && t.price > 0) return t;
-    } catch (err) {
-      console.warn(`[API] fetchTicker failed, using local fallback:`, err);
-    }
+    return fetchJSON<Ticker>(url);
   }
 
   // 3) Local dummy
@@ -153,34 +147,29 @@ export async function fetchIndicators(symbol: string): Promise<Indicators> {
 export async function fetchMarketSnapshot(symbol: string): Promise<any> {
   // Build absolute URL for server-side calls
   let url: string;
-
+  
   if (BASE_URL) {
     // If BASE_URL is set, use it (external API)
     url = `${BASE_URL}${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
   } else {
     // For internal API calls, use absolute URL with current host
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
     url = `${baseUrl}${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
   }
-
+  
   console.log(`[API] Fetching market snapshot from: ${url}`);
-
+  
   try {
     const data = await fetchJSON<any>(url);
-
+    
     console.log(`[API] Market snapshot response for ${symbol}:`, {
       hasData: !!data,
       isArray: Array.isArray(data),
       price: Array.isArray(data) ? data[0]?.price : data?.price,
-      hasIntervals: Array.isArray(data)
-        ? !!data[0]?.intervals
-        : !!data?.intervals,
+      hasIntervals: Array.isArray(data) ? !!data[0]?.intervals : !!data?.intervals
     });
-
+    
     if (Array.isArray(data)) {
       return (
         data.find(

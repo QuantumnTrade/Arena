@@ -313,8 +313,10 @@ async function processDecision(
         `[QuantumnTrade AI] ❌ ASTER execution failed:`,
         executionResult.error
       );
-      // Still create position in DB but mark it as failed
-      await createPosition(agentId, decision);
+      // DO NOT save position to database if entry order failed (no entry_order_id)
+      console.log(
+        `[QuantumnTrade AI] ⚠️ Position NOT saved to database - entry order failed`
+      );
     }
   } else if (signal === "close") {
     // Close existing position with REAL ASTER EXECUTION

@@ -164,25 +164,14 @@ export default function MarketTile({ symbol, onReady }: Props) {
     }
   );
 
-  // Trigger onReady saat salah satu data tersedia (indikator atau ticker)
+  // Trigger onReady sekali ketika indikator & ticker pertama kali tersedia
   const readyRef = useRef(false);
   useEffect(() => {
-    if (!readyRef.current && (indicators || ticker)) {
+    if (!readyRef.current && indicators && ticker) {
       readyRef.current = true;
       onReady?.(symbol);
     }
   }, [indicators, ticker, symbol, onReady]);
-
-  // Safety fallback: jika 3 detik belum ready, tetap tandai ready agar overlay tidak macet
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!readyRef.current) {
-        readyRef.current = true;
-        onReady?.(symbol);
-      }
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [symbol, onReady]);
   const sma = indicators?.sma1m;
   const ema = indicators?.ema1m;
   const rsi = indicators?.rsi;
