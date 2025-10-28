@@ -46,23 +46,23 @@ function quantumSupabaseHeaders(): HeadersInit {
 
 export async function fetchTicker(symbol: string): Promise<Ticker> {
   // 1) Try Supabase REST 'prices' table (skip RPC entirely)
-  if (SUPABASE_URL) {
-    try {
-      const restUrl = `${SUPABASE_URL}/rest/v1/prices?select=symbol,price&symbol=eq.${encodeURIComponent(
-        symbol
-      )}&limit=1`;
-      const rows2 = await fetchJSON<Array<{ symbol: string; price: number }>>(
-        restUrl,
-        { headers: supabaseHeaders() }
-      );
-      const row2 = rows2?.[0];
-      if (row2 && typeof row2.price === "number") {
-        return { symbol: row2.symbol, price: row2.price };
-      }
-    } catch (err) {
-      // ignore and continue to BASE_URL/local
-    }
-  }
+  // if (SUPABASE_URL) {
+  //   try {
+  //     const restUrl = `${SUPABASE_URL}/rest/v1/prices?select=symbol,price&symbol=eq.${encodeURIComponent(
+  //       symbol
+  //     )}&limit=1`;
+  //     const rows2 = await fetchJSON<Array<{ symbol: string; price: number }>>(
+  //       restUrl,
+  //       { headers: supabaseHeaders() }
+  //     );
+  //     const row2 = rows2?.[0];
+  //     if (row2 && typeof row2.price === "number") {
+  //       return { symbol: row2.symbol, price: row2.price };
+  //     }
+  //   } catch (err) {
+  //     // ignore and continue to BASE_URL/local
+  //   }
+  // }
 
   // 2) Fallback to external BASE_URL if configured
   if (BASE_URL) {
@@ -145,9 +145,31 @@ export async function fetchIndicators(symbol: string): Promise<Indicators> {
  * without altering server route shape.
  */
 export async function fetchMarketSnapshot(symbol: string): Promise<any> {
-  const url = `${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
+  // Build absolute URL for server-side calls
+  let url: string;
+  
+  if (BASE_URL) {
+    // If BASE_URL is set, use it (external API)
+    url = `${BASE_URL}${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
+  } else {
+    // For internal API calls, use absolute URL with current host
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    url = `${baseUrl}${INDICATOR_PATH}?symbol=${encodeURIComponent(symbol)}`;
+  }
+  
+  console.log(`[API] Fetching market snapshot from: ${url}`);
+  
   try {
     const data = await fetchJSON<any>(url);
+    
+    console.log(`[API] Market snapshot response for ${symbol}:`, {
+      hasData: !!data,
+      isArray: Array.isArray(data),
+      price: Array.isArray(data) ? data[0]?.price : data?.price,
+      hasIntervals: Array.isArray(data) ? !!data[0]?.intervals : !!data?.intervals
+    });
+    
     if (Array.isArray(data)) {
       return (
         data.find(
@@ -157,6 +179,7 @@ export async function fetchMarketSnapshot(symbol: string): Promise<any> {
     }
     return data;
   } catch (err) {
+    console.error(`[API] Failed to fetch market snapshot for ${symbol}:`, err);
     // Minimal fallback structure to keep consumer robust
     return {
       symbol,

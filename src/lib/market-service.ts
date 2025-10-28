@@ -26,6 +26,15 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
     try {
       // Fetch snapshot (preferred) and fallbacks if necessary
       const snapshot = await fetchMarketSnapshot(symbol);
+      
+      // DEBUG: Log raw snapshot data
+      console.log(`[Market Service] Raw snapshot for ${symbol}:`, {
+        hasData: !!snapshot,
+        price: snapshot?.price,
+        hasIntervals: !!snapshot?.intervals,
+        intervalKeys: snapshot?.intervals ? Object.keys(snapshot.intervals) : []
+      });
+      
       const intervals = snapshot?.intervals || {};
       const i1m =
         intervals["1m"] || intervals["1M"] || intervals["oneMinute"] || {};
@@ -46,7 +55,7 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
       const sma1m = normalize(i1m.sma ?? i1m.sma1m) ?? (price || undefined);
       const ema1m = normalize(i1m.ema ?? i1m.ema1m) ?? (price || undefined);
 
-      return {
+      const result = {
         symbol,
         price,
         indicators: {
@@ -66,6 +75,15 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
           snapshot?.timestamp ||
           new Date().toISOString(),
       };
+      
+      // DEBUG: Log final result
+      console.log(`[Market Service] Final data for ${symbol}:`, {
+        price: result.price,
+        hasIntervals: !!result.intervals,
+        intervalKeys: result.intervals ? Object.keys(result.intervals) : []
+      });
+      
+      return result;
     } catch (error) {
       console.error(
         `[Market Service] Failed to fetch data for ${symbol}:`,

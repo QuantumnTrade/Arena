@@ -104,6 +104,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // DEBUG: Log market data received
+    console.log(`[AI-Analysis] Market data received:`, marketData.map(m => ({
+      symbol: m.symbol,
+      price: m.price,
+      hasIntervals: !!(m as any).intervals,
+      intervalKeys: (m as any).intervals ? Object.keys((m as any).intervals) : []
+    })));
+
     // 4. Build user prompt with market context
     const userPrompt = buildUserPrompt(
       marketData,
@@ -259,6 +267,15 @@ function buildUserPrompt(
 
   // Add market data for each symbol
   marketData.forEach((market) => {
+    // DEBUG: Log what we're processing
+    console.log(`[buildUserPrompt] Processing ${market.symbol}:`, {
+      price: market.price,
+      hasIntervals: !!(market as any).intervals,
+      hasTimeframes: !!(market as any).timeframes,
+      intervalKeys: (market as any).intervals ? Object.keys((market as any).intervals) : [],
+      rawMarket: JSON.stringify(market).substring(0, 200)
+    });
+    
     prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     prompt += `${market.symbol} - Current Price: $${market.price.toFixed(2)}\n`;
     prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
