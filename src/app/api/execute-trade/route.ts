@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentCredentials } from "@/lib/aster-credentials";
 import * as AsterExecution from "@/lib/aster-execution-service";
+import { fetchGateioPrice } from "@/lib/exchange-data";
 import type { AIDecision } from "@/types";
 
 /**
@@ -44,13 +45,41 @@ export async function POST(request: NextRequest) {
     // Get agent credentials (server-side only - SECURE!)
     const credentials = getAgentCredentials(agent.credential_key);
 
+    // Fetch REAL-TIME accurate price from Gate.io before executing
+    let updatedDecision = decision as AIDecision;
+    
+    if (action === "long" || action === "short") {
+      try {
+        const realTimePrice = await fetchGateioPrice(decision.coin);
+        
+        if (realTimePrice > 0) {
+          console.log(`[Execute Trade API] Price update for ${decision.coin}:`, {
+            aiSuggestedPrice: decision.entry_price,
+            realTimePrice,
+            difference: ((realTimePrice - decision.entry_price) / decision.entry_price * 100).toFixed(2) + '%'
+          });
+          
+          // Update decision with accurate real-time price
+          updatedDecision = {
+            ...decision,
+            entry_price: realTimePrice,
+          };
+        } else {
+          console.warn(`[Execute Trade API] Failed to fetch real-time price for ${decision.coin}, using AI suggested price`);
+        }
+      } catch (error) {
+        console.error(`[Execute Trade API] Error fetching real-time price:`, error);
+        // Continue with AI suggested price if fetch fails
+      }
+    }
+
     // Execute trade based on action
     let result;
     
     if (action === "long") {
-      result = await AsterExecution.executeLong(decision as AIDecision, credentials);
+      result = await AsterExecution.executeLong(updatedDecision, credentials);
     } else if (action === "short") {
-      result = await AsterExecution.executeShort(decision as AIDecision, credentials);
+      result = await AsterExecution.executeShort(updatedDecision, credentials);
     } else if (action === "close") {
       result = await AsterExecution.executeClose(decision.coin, credentials);
     }

@@ -175,3 +175,134 @@ export function symbolToPair(symbol: string): string {
       return `${s}USDT`;
   }
 }
+
+/**
+ * Convert symbol to Gate.io pair format (e.g., BTC -> btc_usdt)
+ */
+export function symbolToGatePair(symbol: string): string {
+  const s = symbol?.toUpperCase();
+  switch (s) {
+    case 'BTC':
+      return 'btc_usdt';
+    case 'BNB':
+      return 'bnb_usdt';
+    case 'GIGGLE':
+      return 'giggle_usdt';
+    case 'ASTER':
+      return 'aster_usdt';
+    default:
+      return `${s.toLowerCase()}_usdt`;
+  }
+}
+
+export interface TickerPrice {
+  symbol: string;
+  price: number;
+  volume24h?: number;
+  change24h?: number;
+  high24h?: number;
+  low24h?: number;
+  timestamp?: number;
+}
+
+/**
+ * Fetch all tickers from Gate.io API v2
+ * Returns all trading pairs at once (cached 20 seconds on Gate.io side)
+ * FREE - No API key required
+ * 
+ * Response format:
+ * {
+ *   "btc_usdt": {
+ *     "result": "true",
+ *     "last": "67234.50",
+ *     "lowestAsk": "67235.00",
+ *     "highestBid": "67234.00",
+ *     "percentChange": "2.5",
+ *     "baseVolume": "12345.67",
+ *     "quoteVolume": "830000000",
+ *     "high24hr": "68000.00",
+ *     "low24hr": "65000.00"
+ *   }
+ * }
+ */
+export async function fetchGateioTickers(): Promise<Record<string, TickerPrice>> {
+  const url = 'https://data.gateapi.io/api2/1/tickers';
+  
+  const res = await fetch(url, {
+    next: { revalidate: 0 },
+    headers: { 'User-Agent': 'llm-trading/1.0' },
+  });
+  
+  if (!res.ok) throw new Error(`Gate.io tickers failed: ${res.status}`);
+  
+  const data = await res.json();
+  
+  const tickers: Record<string, TickerPrice> = {};
+  
+  for (const [pair, ticker] of Object.entries(data)) {
+    const t = ticker as any;
+    
+    // Skip if result is not "true" or if no valid data
+    if (t.result !== 'true' && t.result !== true) {
+      continue;
+    }
+    
+    const price = parseFloat(t.last || '0');
+    const volume = parseFloat(t.baseVolume || '0');
+    const change = parseFloat(t.percentChange || '0');
+    const high = parseFloat(t.high24hr || '0');
+    const low = parseFloat(t.low24hr || '0');
+    
+    // Only add if we have a valid price
+    if (price > 0) {
+      tickers[pair] = {
+        symbol: pair,
+        price,
+        volume24h: volume,
+        change24h: change,
+        high24h: high,
+        low24h: low,
+        timestamp: Date.now(),
+      };
+    }
+  }
+  
+  return tickers;
+}
+
+/**
+ * Fetch ticker price for specific symbols from Gate.io
+ * @param symbols - Array of symbols like ['BTC', 'BNB', 'ASTER', 'GIGGLE']
+ * @returns Array of ticker prices
+ */
+export async function fetchGateioPrices(symbols: string[]): Promise<TickerPrice[]> {
+  const allTickers = await fetchGateioTickers();
+  
+  return symbols.map(symbol => {
+    const gatePair = symbolToGatePair(symbol);
+    const ticker = allTickers[gatePair];
+    
+    if (!ticker) {
+      console.warn(`[Gate.io] Ticker not found for ${symbol} (${gatePair})`);
+      return {
+        symbol,
+        price: 0,
+        timestamp: Date.now(),
+      };
+    }
+    
+    return {
+      ...ticker,
+      symbol, // Use original symbol format
+    };
+  });
+}
+
+/**
+ * Fetch single ticker price from Gate.io
+ * @param symbol - Symbol like 'BTC', 'BNB', 'ASTER', 'GIGGLE'
+ */
+export async function fetchGateioPrice(symbol: string): Promise<number> {
+  const prices = await fetchGateioPrices([symbol]);
+  return prices[0]?.price || 0;
+}

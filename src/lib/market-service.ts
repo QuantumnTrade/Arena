@@ -1,5 +1,6 @@
 import { fetchMarketSnapshot } from "./api";
 import type { SymbolCode } from "@/types";
+import { fetchGateioPrice } from "./exchange-data";
 
 /**
  * Market Data Service
@@ -25,16 +26,23 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
   const marketDataPromises = symbols.map(async (symbol) => {
     try {
       // Fetch snapshot (preferred) and fallbacks if necessary
-      const snapshot = await fetchMarketSnapshot(symbol);
-      
+      // const snapshot = await fetchMarketSnapshot(symbol);
+
+      const [coinPrice, snapshot] = await Promise.all([
+        fetchGateioPrice(symbol),
+        fetchMarketSnapshot(symbol),
+      ]);
+
       // DEBUG: Log raw snapshot data
       console.log(`[Market Service] Raw snapshot for ${symbol}:`, {
         hasData: !!snapshot,
         price: snapshot?.price,
         hasIntervals: !!snapshot?.intervals,
-        intervalKeys: snapshot?.intervals ? Object.keys(snapshot.intervals) : []
+        intervalKeys: snapshot?.intervals
+          ? Object.keys(snapshot.intervals)
+          : [],
       });
-      
+
       const intervals = snapshot?.intervals || {};
       const i1m =
         intervals["1m"] || intervals["1M"] || intervals["oneMinute"] || {};
@@ -51,7 +59,7 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
         return Number.isFinite(num) && num > 0 ? num : undefined;
       };
 
-      const price = snapshot?.price ?? 0;
+      const price = coinPrice ?? snapshot?.price ?? 0;
       const sma1m = normalize(i1m.sma ?? i1m.sma1m) ?? (price || undefined);
       const ema1m = normalize(i1m.ema ?? i1m.ema1m) ?? (price || undefined);
 
@@ -75,14 +83,14 @@ export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
           snapshot?.timestamp ||
           new Date().toISOString(),
       };
-      
+
       // DEBUG: Log final result
       console.log(`[Market Service] Final data for ${symbol}:`, {
         price: result.price,
         hasIntervals: !!result.intervals,
-        intervalKeys: result.intervals ? Object.keys(result.intervals) : []
+        intervalKeys: result.intervals ? Object.keys(result.intervals) : [],
       });
-      
+
       return result;
     } catch (error) {
       console.error(

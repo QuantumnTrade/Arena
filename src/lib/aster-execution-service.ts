@@ -237,6 +237,8 @@ export async function executeLong(
     console.log(`[ASTER Execution] Opening LONG position:`, {
       symbol,
       quantity,
+      entry_price: decision.entry_price,
+      size_usd: decision.size_usd,
       leverage: decision.leverage > 10 ? 10 : decision.leverage,
     });
 
@@ -329,6 +331,8 @@ export async function executeShort(
     console.log(`[ASTER Execution] Opening SHORT position:`, {
       symbol,
       quantity,
+      entry_price: decision.entry_price,
+      size_usd: decision.size_usd,
       leverage: decision.leverage > 10 ? 10 : decision.leverage,
     });
 
