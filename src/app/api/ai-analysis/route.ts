@@ -31,20 +31,20 @@ function getAgentMaxToken(model: string): number {
     modelLower.includes("anthropic") ||
     modelLower.includes("sonnet")
   ) {
-    return 128000;
+    return 100000;
   }
   if (modelLower.includes("gemini")) {
     return 850000;
   }
   if (modelLower.includes("grok") || modelLower.includes("xai")) {
-    return 128000;
+    return 100000;
   }
   if (modelLower.includes("deepseek")) {
-    return 64000;
+    return 8000;
   }
 
   // Default fallback
-  return 64000;
+  return 8000;
 }
 
 interface AIMLRequest {
@@ -131,29 +131,31 @@ export async function POST(request: NextRequest) {
       `[AI-Analysis] Calling AIML for agent ${agentModel} (${agentId})`
     );
 
-    // Check if model is Claude (Anthropic models don't support system role)
+    // Check if model is Claude (Anthropic models don't support system role in messages)
     const aimlModel = mapAgentModelToAIML(agentModel);
     const isClaudeModel =
       aimlModel.includes("claude") || aimlModel.includes("anthropic");
 
     const requestBody = isClaudeModel
       ? {
-          // Claude format: combine system prompt with user message
+          // Claude format: Only 'user' and 'assistant' roles supported
+          // System prompt must be combined with user message
           model: aimlModel,
           messages: [
             {
               role: "user",
-              content: userPrompt,
+              content:
+                systemPrompt +
+                "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON." +
+                "\n\n" +
+                userPrompt,
             },
           ],
-          system:
-            systemPrompt +
-            "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON.",
           temperature: 0.7,
           max_tokens: getAgentMaxToken(agentModel),
         }
       : {
-          // Standard format for other models (GPT, Gemini, etc.)
+          // Standard format for other models (GPT, Gemini, Grok, DeepSeek)
           model: aimlModel,
           messages: [
             {
