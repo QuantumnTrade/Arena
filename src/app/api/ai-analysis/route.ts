@@ -44,7 +44,7 @@ function getAgentMaxToken(model: string): number {
   }
 
   // Default fallback
-  return 8000;
+  return 12000;
 }
 
 interface AIMLRequest {
@@ -136,6 +136,15 @@ export async function POST(request: NextRequest) {
     const isClaudeModel =
       aimlModel.includes("claude") || aimlModel.includes("anthropic");
 
+    const isDeepSeekModel = aimlModel.includes("deepseek");
+
+    const systemPromptWithInstructions = isDeepSeekModel
+      ? systemPrompt +
+        "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON." +
+        "\n\nFor DeepSeek Reasoner: Keep your reasoning process CONCISE. Focus on key insights only. Avoid lengthy explanations."
+      : systemPrompt +
+        "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON.";
+
     const requestBody = isClaudeModel
       ? {
           // Claude format: Only 'user' and 'assistant' roles supported
@@ -147,9 +156,7 @@ export async function POST(request: NextRequest) {
               content: userPrompt,
             },
           ],
-          system:
-            systemPrompt +
-            "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON.",
+          system: systemPromptWithInstructions,
           temperature: 0.7,
           max_tokens: getAgentMaxToken(agentModel),
         }
@@ -159,9 +166,7 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content:
-                systemPrompt +
-                "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON.",
+              content: systemPromptWithInstructions,
             },
             {
               role: "user",
