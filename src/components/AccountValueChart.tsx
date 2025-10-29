@@ -49,7 +49,7 @@ function mapLLM(model?: string) {
   return { name: raw.toUpperCase(), logo: "", color: autoColor(raw) };
 }
 
-// Whitelist model LLM yang boleh tampil di grafik
+// Whitelist of LLM models allowed to appear in the chart
 const ALLOWED_LABELS = [
   "CLAUDE SONNET 4.5",
   "DEEPSEEK CHAT V3.1",

@@ -24,7 +24,7 @@ export default function Page() {
     fallbackData: [],
   });
 
-  // Gunakan data Supabase apa adanya tanpa menambah agent dummy
+  // Use Supabase data as-is without adding dummy agents
   const agents = React.useMemo(() => {
     return Array.isArray(fetchedAgents) ? fetchedAgents : [];
   }, [fetchedAgents]);
@@ -103,10 +103,10 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-black text-slate-100 relative overflow-hidden">
-      {/* Quantum Particles Animation - hanya ditampilkan setelah komponen di-mount */}
+      {/* Quantum Particles Animation - shown only after component mounts */}
       <div className="quantum-particles">{particles}</div>
 
-      {/* Data Stream Animation - hanya ditampilkan setelah komponen di-mount */}
+      {/* Data Stream Animation - shown only after component mounts */}
       <div className="data-stream">{dataLines}</div>
 
       {/* Quantum Wave Animation */}

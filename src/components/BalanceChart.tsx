@@ -40,7 +40,7 @@ export default function BalanceChart({ snapshots, loading }: Props) {
       });
 
       if (snapshots?.length) {
-        // Map ke detik unix, urutkan asc, lalu deduplikasi timestamp yang sama
+  // Map to unix seconds, sort ascending, then deduplicate identical timestamps
         const mapped = snapshots.map((s) => ({
           time: Math.floor(new Date(s.snapshot_time).getTime() / 1000),
           value: s.total_balance,
@@ -54,7 +54,7 @@ export default function BalanceChart({ snapshots, loading }: Props) {
             dedup.push(d);
             lastTime = d.time;
           } else {
-            // Jika ada timestamp sama, ambil data terakhir
+  // If duplicate timestamps exist, keep the latest data
             dedup[dedup.length - 1] = d;
           }
         }

@@ -211,14 +211,14 @@ export async function fetchTimeseries(
 
 export async function fetchAgents(): Promise<Agent[]> {
   if (!QUANTUM_SUPABASE_URL || !QUANTUM_SUPABASE_KEY) {
-    // Env tidak lengkap: kembalikan list kosong agar UI stabil pada initial load
+    // Incomplete env: return an empty list to keep UI stable on initial load
     return [];
   }
   try {
     const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agents?select=id,model,balance,total_pnl,roi,trade_count,win_count,loss_count,win_rate,active_positions,is_active,available_capital,credential_key,system_prompt,last_user_prompt,created_at,updated_at&order=model.asc`;
     return await fetchJSON<Agent[]>(url, { headers: quantumSupabaseHeaders() });
   } catch (err) {
-    // Propagate error agar SWR menjaga data sebelumnya dan UI tidak kosong saat timeout
+    // Propagate error so SWR preserves previous data and UI doesn't blank out on timeout
     const e = err instanceof Error ? err : new Error("fetchAgents failed");
     throw e;
   }

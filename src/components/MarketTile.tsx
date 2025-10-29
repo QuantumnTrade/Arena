@@ -31,7 +31,7 @@ function mapToTVSymbol(sym: string) {
   }
 }
 
-// Perubahan indikator dengan warna persist + flash
+// Indicator change with persistent color + flash effect
 function ChangeIndicator({
   id,
   field,
@@ -164,7 +164,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
     }
   );
 
-  // Trigger onReady sekali ketika indikator & ticker pertama kali tersedia
+  // Trigger onReady once when indicators & ticker become available for the first time
   const readyRef = useRef(false);
   useEffect(() => {
     if (!readyRef.current && indicators && ticker) {
@@ -198,7 +198,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
       })
     : "—";
 
-  // Track price history for trend detection (1 minute intervals)
+  // Track price history for trend detection (1-minute intervals)
   const priceHistoryRef = React.useRef<{ price: number; timestamp: number }[]>(
     []
   );
@@ -211,27 +211,27 @@ export default function MarketTile({ symbol, onReady }: Props) {
     const now = Date.now();
     const currentPrice = ticker.price;
 
-    // Add current price to history
+  // Add current price to history
     priceHistoryRef.current.push({ price: currentPrice, timestamp: now });
 
-    // Keep only last 2 minutes of data (for comparison)
+  // Keep only the last 2 minutes of data (for comparison)
     const twoMinutesAgo = now - 2 * 60 * 1000;
     priceHistoryRef.current = priceHistoryRef.current.filter(
       (entry) => entry.timestamp > twoMinutesAgo
     );
 
-    // Compare with price from 1 minute ago
+  // Compare with price from 1 minute ago
     const oneMinuteAgo = now - 30 * 1000;
     const oldPrice = priceHistoryRef.current.find(
       (entry) => entry.timestamp <= oneMinuteAgo
     );
 
     if (oldPrice) {
-      // Determine trend: bullish if price increased, bearish if decreased
+  // Determine trend: bullish if price increased, bearish if decreased
       const trend = currentPrice > oldPrice.price;
       setIsBullish(trend);
     } else {
-      // Not enough data yet
+  // Not enough data yet
       setIsBullish(null);
     }
   }, [ticker?.price, symbol]);
@@ -243,7 +243,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
     const container = tvRef.current;
     if (!container) return;
 
-    // Only create widget once per symbol
+  // Only create widget once per symbol
     container.innerHTML = "";
     const widgetSlot = document.createElement("div");
     widgetSlot.className = "tradingview-widget-container__widget";
@@ -255,7 +255,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
       "https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js";
     script.async = true;
 
-    // Use neutral gray color for chart line
+  // Use neutral gray color for chart line
     script.innerHTML = `{
       "symbol": "${mapToTVSymbol(symbol)}",
       "locale": "en",
@@ -274,7 +274,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
     };
   }, [symbol]); // Only re-render when symbol changes, NOT when colors change
 
-  // Rolling text util untuk header harga
+  // Rolling text utility for the price header
   const DigitRollHeader: React.FC<{ digit: number }> = ({ digit }) => {
     const items = React.useMemo(
       () => Array.from({ length: 10 }, (_, i) => i),
@@ -389,7 +389,7 @@ export default function MarketTile({ symbol, onReady }: Props) {
         <div ref={tvRef} className="absolute inset-0 ml-1 mt-2 w-full" />
       </div>
 
-      {/* Ringkasan indikator dari API (tetap di bawah) */}
+      {/* Indicators summary from the API (kept below) */}
       <div className="grid grid-cols-3 gap-x-1 gap-y-1.5 mt-2 relative">
         <div className="col-span-3 text-[10px] text-slate-400 border-b border-slate-800/50 pb-1 mb-1 flex justify-between items-center">
           <span suppressHydrationWarning>Last Update: {hhmm}</span>

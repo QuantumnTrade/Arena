@@ -14,7 +14,7 @@ import { type AsterCredentials } from './aster-credentials';
 
 const ASTER_BASE_URL =
   process.env.NEXT_PUBLIC_ASTER_BASE_URL || "https://fapi.asterdex.com";
-// Spot API menggunakan base URL yang sama dengan Futures
+// Spot API uses the same base URL as Futures
 const ASTER_SPOT_BASE_URL =
   process.env.NEXT_PUBLIC_ASTER_SPOT_BASE_URL || "https://fapi.asterdex.com";
 

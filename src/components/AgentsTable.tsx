@@ -31,7 +31,7 @@ function mapLLM(model?: string) {
   return { name: raw.toUpperCase(), logo: "" };
 }
 
-// Helpers untuk format angka
+// Helpers to format numbers
 const fmtCurrency = (n?: number) =>
   typeof n === "number" ? `$${n.toLocaleString()}` : "-";
 const fmtCurrencySigned = (n?: number) =>
@@ -44,7 +44,7 @@ const fmtPercentSigned = (n?: number) =>
   typeof n === "number" ? `${n >= 0 ? "+" : ""}${n.toFixed(2)}%` : "-";
 const fmtInt = (n?: number) => (typeof n === "number" ? `${n}` : "-");
 
-// Komponen digit roll untuk animasi gulir tiap digit
+// Digit roll component to animate each digit scrolling
 const DigitRoll: React.FC<{ digit: number }> = ({ digit }) => {
   const items = React.useMemo(
     () => Array.from({ length: 10 }, (_, i) => i),
@@ -86,7 +86,7 @@ function renderRollingText(text: string) {
   );
 }
 
-// Komponen kecil untuk mendeteksi perubahan nilai dan memberi animasi warna
+// Small component to detect value changes and apply color animation
 function ChangeValue({
   id,
   field,
@@ -150,19 +150,36 @@ export default function AgentsTable({ agents, loading }: Props) {
       <table className="min-w-[640px] sm:min-w-full text-sm w-full">
         <thead>
           <tr className="text-slate-400 text-xs sm:text-sm">
-            <th className="px-2 sm:px-3 py-2 text-left font-medium whitespace-nowrap">Model</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">Balance</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">Total PnL</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">ROI</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">Trades</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">Win Rate</th>
-            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">Active Pos.</th>
+            <th className="px-2 sm:px-3 py-2 text-left font-medium whitespace-nowrap">
+              Model
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              Balance
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              Total PnL
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              ROI
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              Trades
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              Win Rate
+            </th>
+            <th className="px-2 sm:px-3 py-2 text-right font-medium whitespace-nowrap">
+              Active Pos.
+            </th>
           </tr>
         </thead>
         <tbody>
           {agents && agents.length > 0 ? (
             agents.map((a) => (
-              <tr key={a.id} className="border-t border-slate-800 text-xs sm:text-sm">
+              <tr
+                key={a.id}
+                className="border-t border-slate-800 text-xs sm:text-sm"
+              >
                 <td className="px-2 sm:px-3 py-2 text-slate-100 font-medium">
                   <div className="flex items-center gap-2">
                     {(() => {
