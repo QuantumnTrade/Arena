@@ -21,7 +21,7 @@ export interface MarketSnapshot {
  * Fetch comprehensive market data for all trading symbols
  */
 export async function fetchMarketDataForAI(): Promise<MarketSnapshot[]> {
-  const symbols: SymbolCode[] = ["BTC", "GIGGLE", "ASTER", "BNB"];
+  const symbols: SymbolCode[] = ["BTC", "ETH", "SOL", "BNB", "ASTER", "GIGGLE"];
 
   const marketDataPromises = symbols.map(async (symbol) => {
     try {

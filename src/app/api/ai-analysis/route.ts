@@ -509,7 +509,7 @@ function buildUserPrompt(
 
     prompt += `Re-evaluate ALL indicators with CURRENT data:\n\n`;
 
-    prompt += `For EACH coin (BTC, ASTER, GIGGLE, BNB):\n\n`;
+    prompt += `For EACH coin (BTC, ETH, SOL, BNB, ASTER, GIGGLE):\n\n`;
 
     prompt += `  📈 Price Action:\n`;
     prompt += `     • Current price and recent movement\n`;
@@ -638,7 +638,7 @@ function buildUserPrompt(
     prompt += `✓ UNIQUE conclusion reflecting market evolution (not copy-paste!)\n`;
     prompt += `✓ Specific price movement analysis with percentages\n`;
     prompt += `✓ Prediction accuracy acknowledgment (right/wrong + why)\n`;
-    prompt += `✓ UPDATED decisions for ALL 4 coins with CURRENT prices\n`;
+    prompt += `✓ UPDATED decisions for ALL 6 coins with CURRENT prices\n`;
     prompt += `✓ Clear HOLD/CLOSE signals for active positions with P&L status\n`;
     prompt += `✓ Fresh LONG/SHORT/WAIT signals for coins without positions\n`;
     prompt += `✓ Specific technical reasoning (not generic statements)\n`;
@@ -652,7 +652,7 @@ function buildUserPrompt(
 
     prompt += `📊 ANALYZE THOROUGHLY:\n\n`;
 
-    prompt += `For EACH coin (BTC, ASTER, GIGGLE, BNB):\n\n`;
+    prompt += `For EACH coin (BTC, ETH, SOL, BNB, ASTER, GIGGLE):\n\n`;
 
     prompt += `  1. Price Action Analysis:\n`;
     prompt += `     • Current price and recent trend\n`;

@@ -2,7 +2,7 @@
 import React from "react";
 import MarketTile from "@/components/MarketTile";
 
-const symbols = ["BTC", "GIGGLE", "ASTER", "BNB"] as const;
+const symbols = ["BTC", "ETH", "SOL", "BNB", "ASTER", "GIGGLE"] as const;
 
 export default function CompactMarkets() {
   return (
