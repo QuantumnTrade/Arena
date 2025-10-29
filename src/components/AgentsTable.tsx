@@ -193,7 +193,11 @@ export default function AgentsTable({ agents, loading }: Props) {
                               className="h-5 w-5 rounded-sm"
                             />
                           )}
-                          <span>{name}</span>
+                          <span>
+                            {name.toLowerCase().includes("qwen")
+                              ? "QWEN3 MAX INSTRUCT"
+                              : name}
+                          </span>
                         </>
                       );
                     })()}

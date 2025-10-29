@@ -25,6 +25,10 @@ const CREDENTIAL_KEY_MAP: Record<string, { apiKey: string; secretKey: string }> 
     apiKey: 'ASTER_API_KEY_GEMINI',
     secretKey: 'ASTER_SECRET_KEY_GEMINI',
   },
+  QWEN: {
+    apiKey: 'ASTER_API_KEY_GEMINI',
+    secretKey: 'ASTER_SECRET_KEY_GEMINI',
+  },
   GROK: {
     apiKey: 'ASTER_API_KEY_GROK',
     secretKey: 'ASTER_SECRET_KEY_GROK',

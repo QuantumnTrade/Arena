@@ -64,6 +64,9 @@ function getAgentName(model: string): string {
   if (modelLower.includes("deepseek")) {
     return "DEEPSEEK REASONER V3.1";
   }
+  if (modelLower.includes("qwen")) {
+    return "QWEN3 MAX INSTRUCT";
+  }
 
   // Default fallback for unknown models
   return "";

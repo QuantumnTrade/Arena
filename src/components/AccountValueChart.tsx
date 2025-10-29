@@ -42,9 +42,9 @@ function mapLLM(model?: string) {
     };
   if (m.includes("qwen"))
     return {
-      name: "QWEN3 MAX",
+      name: "QWEN3 MAX INSTRUCT",
       logo: "/icons/qwen_logo.png",
-      color: "#14b8a6",
+      color: "#653DDC",
     };
   return { name: raw.toUpperCase(), logo: "", color: autoColor(raw) };
 }
@@ -56,7 +56,7 @@ const ALLOWED_LABELS = [
   "GEMINI 2.5 PRO",
   "GROK 4",
   "GPT 5",
-  "QWEN3 MAX",
+  "QWEN3 MAX INSTRUCT",
 ] as const;
 const isAllowedLabel = (label: string) =>
   (ALLOWED_LABELS as readonly string[]).includes(label);
