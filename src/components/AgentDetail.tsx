@@ -88,10 +88,10 @@ export default function AgentDetail({ agent }: AgentDetailProps) {
   const { data: summaries = [], isLoading: summariesLoading } = useSWR(
     ["summaries", agent.id],
     () => fetchAgentSummaries(agent.id),
-    { 
+    {
       refreshInterval: 10000, // 10 seconds - matches positions refresh
       revalidateOnFocus: true, // Refresh when user returns to tab
-      revalidateOnReconnect: true // Refresh when internet reconnects
+      revalidateOnReconnect: true, // Refresh when internet reconnects
     }
   );
 
@@ -493,9 +493,15 @@ function LatestTab({
 // Helper function to get coin icon based on symbol
 function getCoinIcon(symbol: string): string {
   const symbolUpper = symbol.toUpperCase();
-  
+
   if (symbolUpper === "BTC") {
     return "/icons/btc_icon.png";
+  }
+  if (symbolUpper === "ETH") {
+    return "/icons/eth.svg";
+  }
+  if (symbolUpper === "SOL") {
+    return "/icons/sol.svg";
   }
   if (symbolUpper === "BNB") {
     return "/icons/bnb_icon.png";
@@ -506,7 +512,7 @@ function getCoinIcon(symbol: string): string {
   if (symbolUpper === "ASTER") {
     return "/icons/aster_icon.png";
   }
-  
+
   return "/icons/aster_icon.png"; // Default fallback
 }
 
