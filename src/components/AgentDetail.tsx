@@ -53,7 +53,7 @@ function getAgentName(model: string): string {
     modelLower.includes("anthropic") ||
     modelLower.includes("sonnet")
   ) {
-    return "Claude 4.5";
+    return "CLAUDE SONNET 4.5";
   }
   if (modelLower.includes("gemini")) {
     return "GEMINI 2.5 PRO";

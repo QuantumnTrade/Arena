@@ -31,7 +31,7 @@ function getAgentMaxToken(model: string): number {
     modelLower.includes("anthropic") ||
     modelLower.includes("sonnet")
   ) {
-    return 150000;
+    return 100000;
   }
   if (modelLower.includes("gemini")) {
     return 850000;
