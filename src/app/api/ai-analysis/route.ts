@@ -31,13 +31,13 @@ function getAgentMaxToken(model: string): number {
     modelLower.includes("anthropic") ||
     modelLower.includes("sonnet")
   ) {
-    return 100000;
+    return 64000;
   }
   if (modelLower.includes("gemini")) {
     return 850000;
   }
   if (modelLower.includes("grok") || modelLower.includes("xai")) {
-    return 100000;
+    return 64000;
   }
   if (modelLower.includes("deepseek")) {
     return 8000;
@@ -144,13 +144,12 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "user",
-              content:
-                systemPrompt +
-                "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON." +
-                "\n\n" +
-                userPrompt,
+              content: userPrompt,
             },
           ],
+          system:
+            systemPrompt +
+            "\n\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no code blocks, just pure JSON.",
           temperature: 0.7,
           max_tokens: getAgentMaxToken(agentModel),
         }
