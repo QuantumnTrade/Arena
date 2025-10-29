@@ -13,6 +13,10 @@ const CREDENTIAL_KEY_MAP: Record<string, { apiKey: string; secretKey: string }> 
     apiKey: 'ASTER_API_KEY_GPT',
     secretKey: 'ASTER_SECRET_KEY_GPT',
   },
+  CLAUDE: {
+    apiKey: 'ASTER_API_KEY_GPT',
+    secretKey: 'ASTER_SECRET_KEY_GPT',
+  },
   DEEPSEEK: {
     apiKey: 'ASTER_API_KEY_DEEPSEEK',
     secretKey: 'ASTER_SECRET_KEY_DEEPSEEK',

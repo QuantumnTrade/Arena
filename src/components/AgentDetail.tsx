@@ -62,7 +62,7 @@ function getAgentName(model: string): string {
     return "GROK 4";
   }
   if (modelLower.includes("deepseek")) {
-    return "DEEPSEEK CHAT V3.1";
+    return "DEEPSEEK REASONER V3.1";
   }
 
   // Default fallback for unknown models
@@ -487,6 +487,26 @@ function LatestTab({
   );
 }
 
+// Helper function to get coin icon based on symbol
+function getCoinIcon(symbol: string): string {
+  const symbolUpper = symbol.toUpperCase();
+  
+  if (symbolUpper === "BTC") {
+    return "/icons/btc_icon.png";
+  }
+  if (symbolUpper === "BNB") {
+    return "/icons/bnb_icon.png";
+  }
+  if (symbolUpper === "GIGGLE") {
+    return "/icons/giggle_icon.png";
+  }
+  if (symbolUpper === "ASTER") {
+    return "/icons/aster_icon.png";
+  }
+  
+  return "/icons/aster_icon.png"; // Default fallback
+}
+
 // Decision Card Component
 function DecisionCard({ decision }: { decision: any }) {
   const signalColors: Record<string, string> = {
@@ -503,6 +523,13 @@ function DecisionCard({ decision }: { decision: any }) {
     <div className="bg-gray-600/30 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
+          <Image
+            src={getCoinIcon(decision.coin)}
+            alt={`${decision.coin} icon`}
+            width={20}
+            height={20}
+            className="rounded-full"
+          />
           <span className="text-sm font-bold text-white">{decision.coin}</span>
           <span
             className={`text-xs font-bold uppercase px-auto py-0.5 rounded ${signalColor}`}
@@ -694,6 +721,13 @@ function PositionCard({
     <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
+          <Image
+            src={getCoinIcon(position.symbol)}
+            alt={`${position.symbol} icon`}
+            width={20}
+            height={20}
+            className="rounded-full"
+          />
           <span className="text-sm font-bold text-white">
             {position.symbol}
           </span>

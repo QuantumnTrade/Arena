@@ -643,10 +643,10 @@ function buildUserPrompt(
 function mapAgentModelToAIML(agentModel: string): string {
   const modelMap: { [key: string]: string } = {
     grok: "x-ai/grok-4-fast-reasoning",
-    deepseek: "deepseek/deepseek-chat-v3.1",
+    deepseek: "deepseek/deepseek-reasoner-v3.1",
     gemini: "google/gemini-2.5-pro",
     openai: "openai/gpt-5-chat-latest",
-    claude: "claude-3-5-sonnet-20241022",
+    claude: "anthropic/claude-sonnet-4.5",
   };
 
   const normalized = agentModel.toLowerCase().trim();

@@ -24,21 +24,21 @@ function mapLLM(model?: string) {
     return {
       name: "CLAUDE SONNET 4.5",
       logo: "/icons/Claude_logo.png",
-      color: "#c084fc",
+      color: "#DA7B5C",
     };
   if (m.includes("gemini"))
     return {
       name: "GEMINI 2.5 PRO",
       logo: "/icons/Gemini_logo.webp",
-      color: "#fb923c",
+      color: "#A794FB",
     };
   if (m.includes("grok") || m.includes("xai"))
     return { name: "GROK 4", logo: "/icons/Grok_logo.webp", color: "#22c55e" };
   if (m.includes("deepseek"))
     return {
-      name: "DEEPSEEK CHAT V3.1",
+      name: "DEEPSEEK REASONER V3.1",
       logo: "/icons/deepseek_logo.png",
-      color: "#ec4899",
+      color: "#5370FE",
     };
   if (m.includes("qwen"))
     return {
@@ -52,7 +52,7 @@ function mapLLM(model?: string) {
 // Whitelist of LLM models allowed to appear in the chart
 const ALLOWED_LABELS = [
   "CLAUDE SONNET 4.5",
-  "DEEPSEEK CHAT V3.1",
+  "DEEPSEEK REASONER V3.1",
   "GEMINI 2.5 PRO",
   "GROK 4",
   "GPT 5",
@@ -414,6 +414,51 @@ export default function AccountValueChart() {
           </div>
         </div>
       </div>
+
+      {/* Agent Stats - Images and Current Balances */}
+      {agents && agents.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-3">
+          {agents.map((agent) => {
+            const { name, logo, color } = mapLLM(agent.model);
+            const balance = agent.balance || 100;
+            const roi = agent.roi || 0;
+            const roiColor = roi >= 0 ? "text-green-400" : "text-red-400";
+            const roiSign = roi >= 0 ? "+" : "";
+            
+            return (
+              <div
+                key={agent.id}
+                className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50"
+                style={{
+                  borderLeftColor: color,
+                  borderLeftWidth: "3px",
+                }}
+              >
+                {logo && (
+                  <Image
+                    src={logo}
+                    alt={name}
+                    width={24}
+                    height={24}
+                    className="rounded"
+                  />
+                )}
+                <div className="flex flex-col">
+                  <div className="text-xs text-slate-400">{name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">
+                      ${balance.toFixed(2)}
+                    </span>
+                    <span className={`text-xs font-medium ${roiColor}`}>
+                      ({roiSign}{roi.toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {!ready && (
         <div className="text-xs text-slate-400">

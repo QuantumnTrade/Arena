@@ -25,7 +25,7 @@ function mapLLM(model?: string) {
   if (m.includes("grok") || m.includes("xai"))
     return { name: "GROK 4", logo: "/icons/Grok_logo.webp" };
   if (m.includes("deepseek"))
-    return { name: "DEEPSEEK CHAT V3.1", logo: "/icons/deepseek_logo.png" };
+    return { name: "DEEPSEEK REASONER V3.1", logo: "/icons/deepseek_logo.png" };
   if (m.includes("qwen"))
     return { name: "QWEN3 MAX", logo: "/icons/qwen_logo.png" };
   return { name: raw.toUpperCase(), logo: "" };
