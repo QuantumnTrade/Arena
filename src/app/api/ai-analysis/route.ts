@@ -409,19 +409,47 @@ function buildUserPrompt(
   if (activePositions.length > 0) {
     prompt += `=== YOUR ACTIVE POSITIONS ===\n\n`;
     activePositions.forEach((pos, idx) => {
-      prompt += `Position ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
-      prompt += `  Current Price: $${marketPrice[pos.symbol]}\n`;
-      prompt += `  Entry: $${pos.entry_price}\n`;
-      prompt += `  Size: $${pos.size_usd} (${pos.leverage}x)\n`;
-      prompt += `  Stop Loss: $${pos.stop_loss}\n`;
-      prompt += `  Take Profit: $${pos.take_profit}\n`;
-      prompt += `  Invalidation: ${pos.invalidation_condition}\n`;
-      prompt += `  Exit Strategy: ${pos.exit_strategy}\n\n`;
+      const currentPrice = marketPrice[pos.symbol];
+      const entryPrice = pos.entry_price;
+
+      // Calculate PnL to make entry vs current distinction crystal clear
+      const pnlPercent =
+        pos.side === "LONG"
+          ? ((currentPrice - entryPrice) / entryPrice) * 100
+          : ((entryPrice - currentPrice) / entryPrice) * 100;
+      const pnlUsd = (pos.size_usd * pnlPercent) / 100;
+      const pnlSign = pnlPercent >= 0 ? "+" : "";
+
+      prompt += `========================================\n`;
+      prompt += `POSITION ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
+      prompt += `========================================\n`;
+      prompt += `  ENTRY PRICE (when opened): $${entryPrice.toFixed(2)}\n`;
+      prompt += `  CURRENT MARKET PRICE (now): $${currentPrice.toFixed(2)}\n`;
+      prompt += `  Unrealized PnL: ${pnlSign}$${pnlUsd.toFixed(
+        2
+      )} (${pnlSign}${pnlPercent.toFixed(2)}%)\n`;
+      prompt += `  Position Size: $${pos.size_usd.toFixed(2)} (${
+        pos.leverage
+      }x leverage)\n`;
+      prompt += `  Stop Loss: $${pos.stop_loss.toFixed(2)}\n`;
+      prompt += `  Take Profit: $${pos.take_profit.toFixed(2)}\n`;
+      prompt += `  Invalidation Condition: ${pos.invalidation_condition}\n`;
+      prompt += `  Exit Strategy: Hold for ${pos.exit_strategy}\n`;
+      prompt += `\n`;
     });
   }
 
   prompt += `\n=== INSTRUCTIONS ===\n`;
   prompt += `Analyze the current market data and provide trading decisions for BTC, ETH, SOL, BNB, ASTER and GIGGLE.\n`;
+  prompt += `\n`;
+  prompt += `CRITICAL RULES FOR ACTIVE POSITIONS:\n`;
+  prompt += `1. When deciding to HOLD an existing position, you MUST use the ENTRY PRICE shown above, NOT the current market price.\n`;
+  prompt += `2. The "ENTRY PRICE (when opened)" is the price at which you originally entered the position.\n`;
+  prompt += `3. The "CURRENT MARKET PRICE (now)" is the current market price for reference only.\n`;
+  prompt += `4. For HOLD decisions, your entry_price in the JSON response MUST match the "ENTRY PRICE (when opened)" exactly.\n`;
+  prompt += `5. Example: If position shows "ENTRY PRICE (when opened): $192.76", your HOLD decision must use entry_price: 192.76\n`;
+  prompt += `6. DO NOT use the current market price as the entry price for HOLD decisions!\n`;
+  prompt += `\n`;
   prompt += `Return your analysis in the JSON format specified in the system prompt.\n`;
 
   return prompt;

@@ -828,6 +828,12 @@ export async function closePositionMarket(
   // Only add positionSide in Hedge Mode
   if (usePositionSide) {
     orderParams.positionSide = positionSide;
+  } else {
+    // In One-Way Mode: Use reduceOnly to bypass MIN_NOTIONAL requirement
+    // This allows closing small positions (< $5) without errors
+    // IMPORTANT: reduceOnly CANNOT be sent in Hedge Mode (per ASTER API docs)
+    orderParams.reduceOnly = true;
+    console.log(`[ASTER] Using reduceOnly=true for One-Way Mode close order`);
   }
 
   return placeOrder(orderParams, credentials);
