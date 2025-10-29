@@ -1,11 +1,11 @@
-import type { Position, AgentSummary, AIDecision, Agent } from '@/types';
+import type { Position, AgentSummary, AIDecision, Agent } from "@/types";
 
 const QUANTUM_SUPABASE_URL = process.env.NEXT_PUBLIC_QUANTUM_SUPABASE_URL;
 const QUANTUM_SUPABASE_KEY = process.env.NEXT_PUBLIC_QUANTUM_SUPABASE_KEY;
 
 /**
  * Supabase Service for Trading Operations
- * 
+ *
  * Handles all database operations for:
  * - Positions (create, update, close)
  * - Agent summaries (create)
@@ -13,12 +13,13 @@ const QUANTUM_SUPABASE_KEY = process.env.NEXT_PUBLIC_QUANTUM_SUPABASE_KEY;
  */
 
 function getHeaders(): HeadersInit {
-  if (!QUANTUM_SUPABASE_KEY) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_KEY');
+  if (!QUANTUM_SUPABASE_KEY)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_KEY");
   return {
     apikey: QUANTUM_SUPABASE_KEY,
     Authorization: `Bearer ${QUANTUM_SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
   };
 }
 
@@ -26,14 +27,17 @@ function getHeaders(): HeadersInit {
  * Fetch active positions for an agent
  * Only returns positions where entry_order_id is not null (entry order successfully executed)
  */
-export async function fetchActivePositions(agentId: string): Promise<Position[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchActivePositions(
+  agentId: string
+): Promise<Position[]> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   // Filter: is_active=true AND entry_order_id is not null
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?agent_id=eq.${agentId}&is_active=eq.true&entry_order_id=not.is.null&select=*`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -49,14 +53,18 @@ export async function fetchActivePositions(agentId: string): Promise<Position[]>
  * Only returns positions where entry_order_id is not null (entry order successfully executed)
  * Ordered by created_at (entry time) descending
  */
-export async function fetchAllPositions(agentId: string, limit: number = 50): Promise<Position[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchAllPositions(
+  agentId: string,
+  limit: number = 50
+): Promise<Position[]> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   // Filter: entry_order_id is not null (only successful trades)
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?agent_id=eq.${agentId}&entry_order_id=not.is.null&select=*&order=created_at.desc&limit=${limit}`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -71,13 +79,17 @@ export async function fetchAllPositions(agentId: string, limit: number = 50): Pr
  * Fetch closed positions for an agent
  * Ordered by exit_time (close time) descending - newest first
  */
-export async function fetchClosedPositionsByExitTime(agentId: string, limit: number = 10): Promise<Position[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchClosedPositionsByExitTime(
+  agentId: string,
+  limit: number = 10
+): Promise<Position[]> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?agent_id=eq.${agentId}&is_active=eq.false&select=*&order=exit_time.desc.nullslast&limit=${limit}`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -102,11 +114,14 @@ export async function createPosition(
     takeProfitOrderId?: number;
   }
 ): Promise<Position> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   // CRITICAL: Do not create position if entry_order_id is null (trade failed)
   if (!asterOrderIds?.entryOrderId) {
-    throw new Error('Cannot create position without entry_order_id - trade execution failed');
+    throw new Error(
+      "Cannot create position without entry_order_id - trade execution failed"
+    );
   }
 
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions`;
@@ -122,13 +137,13 @@ export async function createPosition(
   const liquidationPrice = calculateLiquidationPrice(
     decision.entry_price,
     decision.leverage,
-    decision.signal as 'long' | 'short'
+    decision.signal as "long" | "short"
   );
 
   const positionData = {
     agent_id: agentId,
     symbol: decision.coin,
-    side: decision.signal.toUpperCase() as 'LONG' | 'SHORT',
+    side: decision.signal.toUpperCase() as "LONG" | "SHORT",
     entry_price: decision.entry_price,
     stop_loss: decision.stop_loss,
     take_profit: decision.profit_target,
@@ -150,21 +165,23 @@ export async function createPosition(
     take_profit_order_id: asterOrderIds?.takeProfitOrderId || null,
   };
 
-  console.log('[Supabase] Creating position with ASTER order IDs:', {
+  console.log("[Supabase] Creating position with ASTER order IDs:", {
     entryOrderId: asterOrderIds?.entryOrderId,
     stopLossOrderId: asterOrderIds?.stopLossOrderId,
     takeProfitOrderId: asterOrderIds?.takeProfitOrderId,
   });
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(positionData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to create position: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to create position: ${response.status} - ${errorText}`
+    );
   }
 
   const positions = await response.json();
@@ -182,26 +199,34 @@ export async function updatePositionWithOrderIds(
     takeProfitOrderId?: number;
   }
 ): Promise<void> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?id=eq.${positionId}`;
 
   const updateData: Record<string, any> = {};
   if (orderIds.entryOrderId) updateData.entry_order_id = orderIds.entryOrderId;
-  if (orderIds.stopLossOrderId) updateData.stop_loss_order_id = orderIds.stopLossOrderId;
-  if (orderIds.takeProfitOrderId) updateData.take_profit_order_id = orderIds.takeProfitOrderId;
+  if (orderIds.stopLossOrderId)
+    updateData.stop_loss_order_id = orderIds.stopLossOrderId;
+  if (orderIds.takeProfitOrderId)
+    updateData.take_profit_order_id = orderIds.takeProfitOrderId;
 
-  console.log('[Supabase] Updating position with order IDs:', { positionId, orderIds });
+  console.log("[Supabase] Updating position with order IDs:", {
+    positionId,
+    orderIds,
+  });
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to update position order IDs: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to update position order IDs: ${response.status} - ${errorText}`
+    );
   }
 }
 
@@ -213,11 +238,12 @@ export async function closePosition(
   exitPrice: number,
   exitReason: string
 ): Promise<Position> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   // First, fetch the position to calculate PnL
   const position = await fetchPositionById(positionId);
-  
+
   // Calculate PnL
   const { pnlUsd, pnlPct } = calculatePnL(
     position.side,
@@ -239,14 +265,16 @@ export async function closePosition(
   };
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to close position: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to close position: ${response.status} - ${errorText}`
+    );
   }
 
   const positions = await response.json();
@@ -257,12 +285,13 @@ export async function closePosition(
  * Fetch single position by ID
  */
 async function fetchPositionById(positionId: string): Promise<Position> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?id=eq.${positionId}&select=*`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -278,12 +307,13 @@ async function fetchPositionById(positionId: string): Promise<Position> {
  * Fetch single agent by ID
  */
 async function fetchAgent(agentId: string): Promise<Agent> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agents?id=eq.${agentId}&select=*`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -305,13 +335,17 @@ export async function createAgentSummary(
   invocationCount: number,
   runtimeMinutes: number
 ): Promise<AgentSummary> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const agent = await fetchAgent(agentId);
   const activePositions = await fetchActivePositions(agentId);
-  
+
   // Calculate total exposure
-  const totalExposure = activePositions.reduce((sum, pos) => sum + pos.size_usd, 0);
+  const totalExposure = activePositions.reduce(
+    (sum, pos) => sum + pos.size_usd,
+    0
+  );
 
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_summaries`;
 
@@ -329,17 +363,22 @@ export async function createAgentSummary(
     conclusion: conclusion,
   };
 
-  console.log('[Supabase] Creating summary with data:', JSON.stringify(summaryData, null, 2));
+  console.log(
+    "[Supabase] Creating summary with data:",
+    JSON.stringify(summaryData, null, 2)
+  );
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(summaryData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to create summary: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to create summary: ${response.status} - ${errorText}`
+    );
   }
 
   const summaries = await response.json();
@@ -349,13 +388,16 @@ export async function createAgentSummary(
 /**
  * Fetch latest agent summary (most recent analysis)
  */
-export async function fetchLatestAgentSummary(agentId: string): Promise<AgentSummary | null> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchLatestAgentSummary(
+  agentId: string
+): Promise<AgentSummary | null> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_summaries?agent_id=eq.${agentId}&select=*&order=session_timestamp.desc&limit=1`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -370,13 +412,17 @@ export async function fetchLatestAgentSummary(agentId: string): Promise<AgentSum
 /**
  * Fetch agent summaries (history)
  */
-export async function fetchAgentSummaries(agentId: string, limit: number = 10): Promise<AgentSummary[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchAgentSummaries(
+  agentId: string,
+  limit: number = 10
+): Promise<AgentSummary[]> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_summaries?agent_id=eq.${agentId}&select=*&order=session_timestamp.desc&limit=${limit}`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -390,7 +436,7 @@ export async function fetchAgentSummaries(agentId: string, limit: number = 10): 
 /**
  * Update agent stats after position close
  * Calculates and updates: total_pnl, roi, trade_count, win_count, loss_count, win_rate
- * 
+ *
  * @param agentId - Agent ID
  * @param closedPosition - The position that was just closed (with calculated PnL)
  */
@@ -398,15 +444,16 @@ export async function updateAgentStats(
   agentId: string,
   closedPosition: Position
 ): Promise<void> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const agent = await fetchAgent(agentId);
-  
+
   // Get PnL from closed position
   const pnlUsd = closedPosition.pnl_usd || 0;
   const isWin = pnlUsd > 0;
 
-  console.log('[Supabase] Updating agent stats:', {
+  console.log("[Supabase] Updating agent stats:", {
     agentId,
     currentBalance: agent.balance,
     pnlUsd,
@@ -416,7 +463,7 @@ export async function updateAgentStats(
       trade_count: agent.trade_count,
       win_count: agent.win_count,
       loss_count: agent.loss_count,
-    }
+    },
   });
 
   // Calculate new stats
@@ -424,8 +471,9 @@ export async function updateAgentStats(
   const newTradeCount = (agent.trade_count || 0) + 1;
   const newWinCount = (agent.win_count || 0) + (isWin ? 1 : 0);
   const newLossCount = (agent.loss_count || 0) + (isWin ? 0 : 1);
-  const newWinRate = newTradeCount > 0 ? (newWinCount / newTradeCount) * 100 : 0;
-  
+  const newWinRate =
+    newTradeCount > 0 ? (newWinCount / newTradeCount) * 100 : 0;
+
   // Calculate ROI based on initial balance
   // ROI = (Current Total PnL / Initial Balance) * 100
   const initialBalance = agent.balance - (agent.total_pnl || 0); // Reverse calculate initial balance
@@ -442,30 +490,138 @@ export async function updateAgentStats(
     win_rate: newWinRate,
   };
 
-  console.log('[Supabase] New agent stats:', updateData);
+  console.log("[Supabase] New agent stats:", updateData);
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to update agent stats: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to update agent stats: ${response.status} - ${errorText}`
+    );
   }
 
-  console.log('[Supabase] ✅ Agent stats updated successfully');
+  console.log("[Supabase] ✅ Agent stats updated successfully");
+}
+
+/**
+ * Sync database positions with ASTER exchange positions
+ * Auto-close positions that are closed on exchange but still active in database
+ *
+ * @param agentId - Agent ID
+ * @param asterPositions - Current positions from ASTER API
+ * @returns Number of positions auto-closed
+ */
+export async function syncPositionsWithExchange(
+  agentId: string,
+  asterPositions: Array<{
+    symbol: string;
+    positionAmt: number;
+    markPrice: number;
+  }>
+): Promise<{ synced: number; closed: number }> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
+  // Get active positions from database
+  const dbPositions = await fetchActivePositions(agentId);
+
+  let closedCount = 0;
+  const syncResults = [];
+
+  console.log("[Supabase] Syncing positions with exchange:", {
+    agentId,
+    dbActiveCount: dbPositions.length,
+    exchangeActiveCount: asterPositions.filter((p) => p.positionAmt !== 0)
+      .length,
+  });
+
+  // Check each database position against exchange positions
+  for (const dbPos of dbPositions) {
+    // Find corresponding position on exchange
+    const exchangePos = asterPositions.find((p) => {
+      // Match by symbol (handle ASTER vs ASTERUSDT format)
+      const dbSymbol = dbPos.symbol.toUpperCase();
+      const exchangeSymbol = p.symbol.toUpperCase();
+
+      // Try exact match first
+      if (dbSymbol === exchangeSymbol) return true;
+
+      // Try with USDT suffix
+      if (dbSymbol === exchangeSymbol.replace("USDT", "")) return true;
+      if (dbSymbol + "USDT" === exchangeSymbol) return true;
+
+      return false;
+    });
+
+    // If position not found on exchange OR positionAmt is 0, it's been closed
+    if (!exchangePos || exchangePos.positionAmt === 0) {
+      console.log(
+        `[Supabase] 🔄 Auto-closing position ${dbPos.symbol} (closed on exchange)`
+      );
+
+      try {
+        // Use markPrice from exchange if available, otherwise use entry price
+        const exitPrice = exchangePos?.markPrice || dbPos.entry_price;
+
+        // Close position in database
+        const closedPosition = await closePosition(
+          dbPos.id,
+          exitPrice,
+          "AUTO_SYNC_EXCHANGE_CLOSED"
+        );
+
+        // Update agent stats
+        await updateAgentStats(agentId, closedPosition);
+
+        closedCount++;
+        syncResults.push({
+          symbol: dbPos.symbol,
+          action: "closed",
+          exitPrice,
+          pnl: closedPosition.pnl_usd,
+        });
+
+        console.log(
+          `[Supabase] ✅ Auto-closed ${
+            dbPos.symbol
+          }: PnL ${closedPosition.pnl_usd?.toFixed(2)} USD`
+        );
+      } catch (error) {
+        console.error(
+          `[Supabase] ❌ Failed to auto-close ${dbPos.symbol}:`,
+          error
+        );
+      }
+    }
+  }
+
+  if (closedCount > 0) {
+    console.log(
+      `[Supabase] 🎯 Sync completed: ${closedCount} positions auto-closed`
+    );
+  } else {
+    console.log("[Supabase] ✅ All positions in sync");
+  }
+
+  return { synced: dbPositions.length, closed: closedCount };
 }
 
 /**
  * Update agent active positions count
  */
-export async function updateAgentActivePositions(agentId: string): Promise<void> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+export async function updateAgentActivePositions(
+  agentId: string
+): Promise<void> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const activePositions = await fetchActivePositions(agentId);
-  
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agents?id=eq.${agentId}`;
 
   const updateData = {
@@ -473,14 +629,16 @@ export async function updateAgentActivePositions(agentId: string): Promise<void>
   };
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to update active positions: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to update active positions: ${response.status} - ${errorText}`
+    );
   }
 }
 
@@ -488,12 +646,13 @@ export async function updateAgentActivePositions(agentId: string): Promise<void>
  * Fetch all agents
  */
 export async function fetchAllAgents(): Promise<Agent[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agents?select=*`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -508,14 +667,17 @@ export async function fetchAllAgents(): Promise<Agent[]> {
  * Fetch closed positions for an agent
  * Only returns positions where entry_order_id is not null (entry order successfully executed)
  */
-export async function fetchClosedPositions(agentId: string): Promise<Position[]> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
-  
+export async function fetchClosedPositions(
+  agentId: string
+): Promise<Position[]> {
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
+
   // Filter: is_active=false AND entry_order_id is not null (only successful trades)
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/positions?agent_id=eq.${agentId}&is_active=eq.false&entry_order_id=not.is.null&select=*`;
-  
+
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -529,11 +691,12 @@ export async function fetchClosedPositions(agentId: string): Promise<Position[]>
 /**
  * Recalculate agent stats from ALL closed positions
  * This ensures accuracy by recalculating from scratch instead of incremental updates
- * 
+ *
  * @param agentId - Agent ID to recalculate stats for
  */
 export async function recalculateAgentStats(agentId: string): Promise<void> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   console.log(`[Stats Recalc] Starting recalculation for agent ${agentId}`);
 
@@ -541,7 +704,9 @@ export async function recalculateAgentStats(agentId: string): Promise<void> {
   const agent = await fetchAgent(agentId);
   const closedPositions = await fetchClosedPositions(agentId);
 
-  console.log(`[Stats Recalc] Found ${closedPositions.length} closed positions for agent ${agentId}`);
+  console.log(
+    `[Stats Recalc] Found ${closedPositions.length} closed positions for agent ${agentId}`
+  );
 
   // Calculate stats from ALL closed positions
   let totalPnl = 0;
@@ -551,7 +716,7 @@ export async function recalculateAgentStats(agentId: string): Promise<void> {
   for (const position of closedPositions) {
     const pnl = position.pnl_usd || 0;
     totalPnl += pnl;
-    
+
     if (pnl > 0) {
       winCount++;
     } else if (pnl < 0) {
@@ -582,14 +747,16 @@ export async function recalculateAgentStats(agentId: string): Promise<void> {
   console.log(`[Stats Recalc] Updating agent ${agentId} with:`, updateData);
 
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: "PATCH",
     headers: getHeaders(),
     body: JSON.stringify(updateData),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to update agent stats: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to update agent stats: ${response.status} - ${errorText}`
+    );
   }
 
   console.log(`[Stats Recalc] ✅ Agent ${agentId} stats updated successfully`);
@@ -604,7 +771,7 @@ export async function recalculateAllAgentsStats(): Promise<{
   failed: number;
   errors: Array<{ agentId: string; error: string }>;
 }> {
-  console.log('[Stats Recalc] Starting recalculation for ALL agents');
+  console.log("[Stats Recalc] Starting recalculation for ALL agents");
 
   const agents = await fetchAllAgents();
   console.log(`[Stats Recalc] Found ${agents.length} agents to process`);
@@ -619,23 +786,28 @@ export async function recalculateAllAgentsStats(): Promise<{
       successCount++;
     } catch (error) {
       failedCount++;
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
       errors.push({ agentId: agent.id, error: errorMsg });
-      console.error(`[Stats Recalc] Failed to recalculate stats for agent ${agent.id}:`, errorMsg);
+      console.error(
+        `[Stats Recalc] Failed to recalculate stats for agent ${agent.id}:`,
+        errorMsg
+      );
     }
   }
 
-  console.log(`[Stats Recalc] ✅ Completed: ${successCount} success, ${failedCount} failed`);
+  console.log(
+    `[Stats Recalc] ✅ Completed: ${successCount} success, ${failedCount} failed`
+  );
 
   return { success: successCount, failed: failedCount, errors };
 }
 
 /**
  * Calculate PnL for a position
- * 
+ *
  * IMPORTANT: sizeUsd already includes leverage (sizeUsd = margin * leverage)
  * So we should NOT multiply by leverage again!
- * 
+ *
  * Example:
  * - Margin: $1.33
  * - Leverage: 15x
@@ -646,19 +818,20 @@ export async function recalculateAllAgentsStats(): Promise<{
  * - PnL: $20 * -11.33% = -$2.27 (NOT -$34!)
  */
 function calculatePnL(
-  side: 'LONG' | 'SHORT',
+  side: "LONG" | "SHORT",
   entryPrice: number,
   exitPrice: number,
   sizeUsd: number,
   leverage: number
 ): { pnlUsd: number; pnlPct: number } {
-  const priceChange = side === 'LONG' 
-    ? (exitPrice - entryPrice) / entryPrice
-    : (entryPrice - exitPrice) / entryPrice;
+  const priceChange =
+    side === "LONG"
+      ? (exitPrice - entryPrice) / entryPrice
+      : (entryPrice - exitPrice) / entryPrice;
 
   // PnL percentage (relative to margin, so multiply by leverage)
   const pnlPct = priceChange * leverage * 100;
-  
+
   // PnL in USD (sizeUsd already includes leverage, so DON'T multiply again!)
   const pnlUsd = sizeUsd * priceChange;
 
@@ -671,12 +844,12 @@ function calculatePnL(
 function calculateLiquidationPrice(
   entryPrice: number,
   leverage: number,
-  side: 'long' | 'short'
+  side: "long" | "short"
 ): number {
   // Simplified: liquidation at ~90% loss of margin
   const liquidationPct = 0.9 / leverage;
-  
-  if (side === 'long') {
+
+  if (side === "long") {
     return entryPrice * (1 - liquidationPct);
   } else {
     return entryPrice * (1 + liquidationPct);
@@ -690,22 +863,25 @@ function calculateLiquidationPrice(
 export async function snapshotAllAgentsBalance(): Promise<{
   success: number;
   failed: number;
-  errors: Array<{ agentId: string; error: string }>
+  errors: Array<{ agentId: string; error: string }>;
 }> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
-  console.log('[Balance Snapshot] Starting snapshot for all agents');
+  console.log("[Balance Snapshot] Starting snapshot for all agents");
 
   const agents = await fetchAllAgents();
-  const activeAgents = agents.filter(a => a.is_active);
-  
-  console.log(`[Balance Snapshot] Found ${activeAgents.length} active agents to snapshot`);
+  const activeAgents = agents.filter((a) => a.is_active);
+
+  console.log(
+    `[Balance Snapshot] Found ${activeAgents.length} active agents to snapshot`
+  );
 
   if (activeAgents.length === 0) {
     return { success: 0, failed: 0, errors: [] };
   }
 
-  const snapshots = activeAgents.map(agent => ({
+  const snapshots = activeAgents.map((agent) => ({
     agent_id: agent.id,
     balance: agent.balance,
     available_balance: agent.available_balance,
@@ -722,17 +898,21 @@ export async function snapshotAllAgentsBalance(): Promise<{
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_balance_history`;
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(snapshots),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to save balance snapshots: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to save balance snapshots: ${response.status} - ${errorText}`
+    );
   }
 
-  console.log(`[Balance Snapshot] ✅ Saved ${snapshots.length} snapshots successfully`);
+  console.log(
+    `[Balance Snapshot] ✅ Saved ${snapshots.length} snapshots successfully`
+  );
 
   return { success: snapshots.length, failed: 0, errors: [] };
 }
@@ -740,7 +920,7 @@ export async function snapshotAllAgentsBalance(): Promise<{
 /**
  * Fetch historical balance data for an agent
  * Used for charting
- * 
+ *
  * @param agentId - Agent ID
  * @param hours - Number of hours to fetch (default: 96 hours / 4 days)
  */
@@ -748,14 +928,15 @@ export async function fetchAgentBalanceHistory(
   agentId: string,
   hours: number = 96
 ): Promise<Array<{ timestamp: string; balance: number }>> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_balance_history?agent_id=eq.${agentId}&timestamp=gte.${startTime}&select=timestamp,balance&order=timestamp.asc`;
 
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -769,20 +950,21 @@ export async function fetchAgentBalanceHistory(
 /**
  * Fetch historical balance data for ALL agents
  * Returns data grouped by agent
- * 
+ *
  * @param hours - Number of hours to fetch (default: 96 hours / 4 days)
  */
 export async function fetchAllAgentsBalanceHistory(
   hours: number = 96
 ): Promise<Record<string, Array<{ timestamp: string; balance: number }>>> {
-  if (!QUANTUM_SUPABASE_URL) throw new Error('Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL');
+  if (!QUANTUM_SUPABASE_URL)
+    throw new Error("Missing NEXT_PUBLIC_QUANTUM_SUPABASE_URL");
 
   const startTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
   const url = `${QUANTUM_SUPABASE_URL}/rest/v1/agent_balance_history?timestamp=gte.${startTime}&select=agent_id,timestamp,balance&order=timestamp.asc`;
 
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: getHeaders(),
   });
 
@@ -790,11 +972,15 @@ export async function fetchAllAgentsBalanceHistory(
     throw new Error(`Failed to fetch balance history: ${response.status}`);
   }
 
-  const data: Array<{ agent_id: string; timestamp: string; balance: number }> = await response.json();
+  const data: Array<{ agent_id: string; timestamp: string; balance: number }> =
+    await response.json();
 
   // Group by agent_id
-  const grouped: Record<string, Array<{ timestamp: string; balance: number }>> = {};
-  
+  const grouped: Record<
+    string,
+    Array<{ timestamp: string; balance: number }>
+  > = {};
+
   for (const item of data) {
     if (!grouped[item.agent_id]) {
       grouped[item.agent_id] = [];

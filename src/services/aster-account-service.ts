@@ -1,9 +1,9 @@
 /**
  * ASTER Account Service (PER-AGENT)
- * 
+ *
  * Service layer for fetching ASTER account data and updating Zustand store
  * SUPPORTS MULTI-AGENT: Each agent uses their own credentials
- * 
+ *
  * Best practices:
  * - Per-agent credential isolation
  * - Separation of concerns (API calls vs state management)
@@ -11,14 +11,15 @@
  * - Type safety
  */
 
-import * as AsterClient from '@/lib/aster-client';
-import { getAgentCredentials } from '@/lib/aster-credentials';
-import { useAsterStore, AsterAsset, AsterPosition } from '@/store/aster-store';
-import type { Agent } from '@/types';
+import * as AsterClient from "@/lib/aster-client";
+import { getAgentCredentials } from "@/lib/aster-credentials";
+import { useAsterStore, AsterAsset, AsterPosition } from "@/store/aster-store";
+import { syncPositionsWithExchange } from "@/lib/supabase-service";
+import type { Agent } from "@/types";
 
 /**
  * Fetch and update account data in store for specific agent
- * 
+ *
  * @param agent - Agent with credential_key
  */
 export async function fetchAgentAccountData(agent: Agent): Promise<{
@@ -40,8 +41,12 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
     // 1. Test connectivity
     const isConnected = await AsterClient.testConnectivity();
     if (!isConnected) {
-      store.setAgentConnectionStatus(agent.id, false, 'Failed to connect to ASTER API');
-      return { success: false, error: 'Connection failed' };
+      store.setAgentConnectionStatus(
+        agent.id,
+        false,
+        "Failed to connect to ASTER API"
+      );
+      return { success: false, error: "Connection failed" };
     }
     console.log(`[ASTER Service] ✅ ${agent.model} connected`);
 
@@ -54,22 +59,28 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
     let balances;
     let retryCount = 0;
     const maxRetries = 3;
-    
+
     while (retryCount < maxRetries) {
       try {
         balances = await AsterClient.getAccountBalance(credentials);
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+
         if (retryCount >= maxRetries) {
-          console.error(`[ASTER Service] Failed to fetch balance after ${maxRetries} retries:`, errorMsg);
+          console.error(
+            `[ASTER Service] Failed to fetch balance after ${maxRetries} retries:`,
+            errorMsg
+          );
           throw error;
         }
-        
-        console.warn(`[ASTER Service] Balance fetch failed (attempt ${retryCount}/${maxRetries}), retrying in ${retryCount}s...`);
-        await new Promise(resolve => setTimeout(resolve, retryCount * 1000)); // Exponential backoff
+
+        console.warn(
+          `[ASTER Service] Balance fetch failed (attempt ${retryCount}/${maxRetries}), retrying in ${retryCount}s...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryCount * 1000)); // Exponential backoff
       }
     }
 
@@ -90,10 +101,10 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
       assets[balance.asset] = asset;
 
       // Calculate total (convert to USD equivalent later if needed)
-      if (balance.asset === 'USDT') {
+      if (balance.asset === "USDT") {
         totalBalance += asset.availableBalance;
         availableBalance += asset.availableBalance;
-      } else if (balance.asset === 'BNB') {
+      } else if (balance.asset === "BNB") {
         // For now, just add BNB balance (should convert to USD in production)
         totalBalance += asset.balance;
         availableBalance += asset.availableBalance;
@@ -103,22 +114,28 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
     // 4. Fetch positions with agent credentials (with retry)
     let positionsData;
     retryCount = 0;
-    
+
     while (retryCount < maxRetries) {
       try {
         positionsData = await AsterClient.getPositionInfo(credentials);
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+
         if (retryCount >= maxRetries) {
-          console.error(`[ASTER Service] Failed to fetch positions after ${maxRetries} retries:`, errorMsg);
+          console.error(
+            `[ASTER Service] Failed to fetch positions after ${maxRetries} retries:`,
+            errorMsg
+          );
           throw error;
         }
-        
-        console.warn(`[ASTER Service] Positions fetch failed (attempt ${retryCount}/${maxRetries}), retrying in ${retryCount}s...`);
-        await new Promise(resolve => setTimeout(resolve, retryCount * 1000)); // Exponential backoff
+
+        console.warn(
+          `[ASTER Service] Positions fetch failed (attempt ${retryCount}/${maxRetries}), retrying in ${retryCount}s...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, retryCount * 1000)); // Exponential backoff
       }
     }
     const positions: AsterPosition[] = positionsData!.map((p) => ({
@@ -132,13 +149,29 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
       positionSide: p.positionSide,
     }));
 
+    // 4.5. Sync database positions with exchange (auto-close positions closed on exchange)
+    try {
+      const syncResult = await syncPositionsWithExchange(agent.id, positions);
+      if (syncResult.closed > 0) {
+        console.log(
+          `[ASTER Service] 🔄 Auto-closed ${syncResult.closed} positions for ${agent.model}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[ASTER Service] Failed to sync positions for ${agent.model}:`,
+        error
+      );
+      // Continue even if sync fails
+    }
+
     // 5. Get multi-assets mode status
     let multiAssetsMode = false;
     try {
       const modeStatus = await AsterClient.getMultiAssetsMode(credentials);
       multiAssetsMode = modeStatus.multiAssetsMargin;
     } catch (error) {
-      console.warn('[ASTER Service] Failed to get multi-assets mode:', error);
+      console.warn("[ASTER Service] Failed to get multi-assets mode:", error);
     }
 
     // 6. Update store for this agent
@@ -161,11 +194,15 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
     console.log(`[ASTER Service] ✅ ${agent.model} store updated`);
     return { success: true };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[ASTER Service] Failed to fetch ${agent.model} account data:`, errorMessage);
-    
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error(
+      `[ASTER Service] Failed to fetch ${agent.model} account data:`,
+      errorMessage
+    );
+
     store.setAgentConnectionStatus(agent.id, false, errorMessage);
-    
+
     return { success: false, error: errorMessage };
   }
 }
@@ -202,10 +239,10 @@ export async function fetchAgentBalances(agent: Agent): Promise<{
 
       assets[balance.asset] = asset;
 
-      if (balance.asset === 'USDT') {
+      if (balance.asset === "USDT") {
         totalBalance += asset.availableBalance;
         availableBalance += asset.availableBalance;
-      } else if (balance.asset === 'BNB') {
+      } else if (balance.asset === "BNB") {
         totalBalance += asset.balance;
         availableBalance += asset.availableBalance;
       }
@@ -221,8 +258,9 @@ export async function fetchAgentBalances(agent: Agent): Promise<{
 
     return { success: true };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[ASTER Service] Failed to fetch balances:', errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("[ASTER Service] Failed to fetch balances:", errorMessage);
     return { success: false, error: errorMessage };
   }
 }
@@ -258,8 +296,9 @@ export async function fetchAgentPositions(agent: Agent): Promise<{
 
     return { success: true };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[ASTER Service] Failed to fetch positions:', errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("[ASTER Service] Failed to fetch positions:", errorMessage);
     return { success: false, error: errorMessage };
   }
 }

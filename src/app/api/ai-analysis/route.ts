@@ -326,14 +326,14 @@ function buildUserPrompt(
   }); 
 
   // Add account info
-  prompt += `=== ACCOUNT INFO ===\n`;
+  prompt += `=== YOUR ACCOUNT INFO ===\n`;
   prompt += `Total Balance: $${balance.toFixed(2)}\n`;
   prompt += `Available Capital: $${availableCapital.toFixed(2)}\n`;
   prompt += `Active Positions: ${activePositions.length}\n\n`;
 
   // Add active positions if any
   if (activePositions.length > 0) {
-    prompt += `=== ACTIVE POSITIONS ===\n\n`;
+    prompt += `=== YOUR ACTIVE POSITIONS ===\n\n`;
     activePositions.forEach((pos, idx) => {
       prompt += `Position ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
       prompt += `  Entry: $${pos.entry_price}\n`;
@@ -348,23 +348,288 @@ function buildUserPrompt(
   prompt += `\n=== INSTRUCTIONS ===\n`;
   
   if (previousSummary) {
-    prompt += `⚠️ IMPORTANT: This is a NEW analysis session, NOT a copy-paste of your previous work.\n\n`;
-    prompt += `Your previous analysis is shown above for REFERENCE ONLY.\n`;
-    prompt += `The market has MOVED since then. Prices have CHANGED. You MUST:\n\n`;
-    prompt += `1. ✅ Analyze the CURRENT market data (prices, indicators, timeframes) - NOT the old data\n`;
-    prompt += `2. ✅ Compare current price action vs your previous expectations\n`;
-    prompt += `3. ✅ Write a NEW conclusion describing what happened since last analysis\n`;
-    prompt += `4. ✅ For each coin, make a FRESH decision based on CURRENT conditions:\n`;
-    prompt += `   - If you opened a position: Is it still valid? Should you HOLD, CLOSE, or adjust?\n`;
-    prompt += `   - If you were WAITING: Has a new setup formed? Or still waiting?\n`;
-    prompt += `   - Use CURRENT prices for entry/SL/TP - NOT old prices\n`;
-    prompt += `5. ✅ Your conclusion MUST be different from previous - describe market evolution\n\n`;
-    prompt += `❌ DO NOT copy your previous conclusion word-for-word\n`;
-    prompt += `❌ DO NOT use old entry prices if market has moved\n`;
-    prompt += `❌ DO NOT repeat the same reasoning if conditions changed\n\n`;
-    prompt += `Provide FRESH trading decisions for BTC, ASTER, GIGGLE, and BNB based on CURRENT market data.\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `⚠️  CONTINUATION ANALYSIS - ADAPTIVE INTELLIGENCE REQUIRED\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `🧠 CONTEXT AWARENESS:\n`;
+    prompt += `Your previous analysis is shown above for REFERENCE and CONTINUITY.\n`;
+    prompt += `Time has passed. Market has evolved. You must demonstrate LEARNING and ADAPTATION.\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `📊 STEP 1: MARKET EVOLUTION ANALYSIS (CRITICAL!)\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `Compare PREVIOUS vs CURRENT state:\n\n`;
+    
+    prompt += `For EACH coin, calculate and analyze:\n`;
+    prompt += `  ✓ Price Movement: (Current Price - Previous Price) / Previous Price × 100%\n`;
+    prompt += `  ✓ Prediction Accuracy: Did price move as you expected? (Yes/No + Why)\n`;
+    prompt += `  ✓ Technical Validation: Are your previous indicators still valid?\n`;
+    prompt += `  ✓ Trend Confirmation: Is the trend intact, reversing, or consolidating?\n`;
+    prompt += `  ✓ Key Levels: Were support/resistance levels respected or broken?\n\n`;
+    
+    prompt += `Example Analysis Format:\n`;
+    prompt += `"BTC: Previously at $67,000, now at $67,500 (+0.75%). My bullish bias was\n`;
+    prompt += `CORRECT. RSI moved from 58 to 62 (still healthy). Price respected $66,800\n`;
+    prompt += `support as predicted. Trend remains intact."\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `🎯 STEP 2: ACTIVE POSITION MANAGEMENT (MANDATORY!)\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    if (activePositions.length > 0) {
+      prompt += `⚠️  YOU HAVE ${activePositions.length} ACTIVE POSITION(S) - MANAGE THEM INTELLIGENTLY!\n\n`;
+      
+      activePositions.forEach((pos, idx) => {
+        prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        prompt += `Position ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
+        prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        prompt += `  Entry Price: $${pos.entry_price}\n`;
+        prompt += `  Current Price: [CHECK LATEST ${pos.symbol} PRICE FROM MARKET DATA]\n`;
+        prompt += `  Stop Loss: $${pos.stop_loss}\n`;
+        prompt += `  Take Profit: $${pos.take_profit}\n`;
+        prompt += `  Size: $${pos.size_usd} (${pos.leverage}x leverage)\n`;
+        prompt += `  Invalidation Condition: "${pos.invalidation_condition}"\n\n`;
+        
+        prompt += `  🔍 REQUIRED ANALYSIS FOR THIS POSITION:\n\n`;
+        
+        prompt += `  1. Calculate Current P&L:\n`;
+        const side = pos.side.toUpperCase();
+        if (side === 'LONG') {
+          prompt += `     Formula: ((Current Price - Entry Price) / Entry Price) × Size × Leverage\n`;
+          prompt += `     Is it profitable? By how much?\n\n`;
+        } else {
+          prompt += `     Formula: ((Entry Price - Current Price) / Entry Price) × Size × Leverage\n`;
+          prompt += `     Is it profitable? By how much?\n\n`;
+        }
+        
+        prompt += `  2. Check Invalidation Condition:\n`;
+        prompt += `     ❓ Is "${pos.invalidation_condition}" triggered?\n`;
+        prompt += `     → If YES: Signal = "close" (IMMEDIATELY!)\n`;
+        prompt += `     → If NO: Continue to next checks\n\n`;
+        
+        prompt += `  3. Evaluate Technical Setup:\n`;
+        prompt += `     ❓ Is the original ${side} setup still valid?\n`;
+        prompt += `     ❓ Are indicators still supporting this direction?\n`;
+        prompt += `     ❓ Has market structure changed significantly?\n\n`;
+        
+        prompt += `  4. Risk/Reward Assessment:\n`;
+        prompt += `     ❓ Distance to TP: $${pos.take_profit} (how close?)\n`;
+        prompt += `     ❓ Distance to SL: $${pos.stop_loss} (how close?)\n`;
+        prompt += `     ❓ Is R:R still favorable or deteriorating?\n\n`;
+        
+        prompt += `  5. DECISION LOGIC:\n`;
+        prompt += `     ✅ Signal = "hold" IF:\n`;
+        prompt += `        • Invalidation NOT triggered\n`;
+        prompt += `        • Setup still valid (trend intact, indicators confirming)\n`;
+        prompt += `        • Price moving toward TP (not SL)\n`;
+        prompt += `        • No major structure break\n\n`;
+        
+        prompt += `     ❌ Signal = "close" IF:\n`;
+        prompt += `        • Invalidation condition triggered\n`;
+        prompt += `        • TP reached or very close (take profit!)\n`;
+        prompt += `        • Setup invalidated (trend reversed, structure broken)\n`;
+        prompt += `        • SL very close and setup weakening\n`;
+        prompt += `        • Better opportunity elsewhere (reallocation)\n\n`;
+      });
+      
+      prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    } else {
+      prompt += `✅ No active positions - You have full flexibility to open new trades.\n\n`;
+    }
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `🔬 STEP 3: FRESH TECHNICAL ANALYSIS\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `Re-evaluate ALL indicators with CURRENT data:\n\n`;
+    
+    prompt += `For EACH coin (BTC, ASTER, GIGGLE, BNB):\n\n`;
+    
+    prompt += `  📈 Price Action:\n`;
+    prompt += `     • Current price and recent movement\n`;
+    prompt += `     • Support/resistance levels (update based on recent action)\n`;
+    prompt += `     • Candlestick patterns (if any significant ones)\n\n`;
+    
+    prompt += `  📊 Technical Indicators (use CURRENT values!):\n`;
+    prompt += `     • RSI: Current value, trend, overbought/oversold?\n`;
+    prompt += `     • MACD: Histogram, signal line, bullish/bearish crossover?\n`;
+    prompt += `     • Bollinger Bands: Position relative to bands, squeeze/expansion?\n`;
+    prompt += `     • Volume: Increasing/decreasing, confirming price action?\n\n`;
+    
+    prompt += `  🎯 Multi-Timeframe Confluence:\n`;
+    prompt += `     • 5M: Short-term momentum\n`;
+    prompt += `     • 15M: Entry timing\n`;
+    prompt += `     • 1H: Trend direction\n`;
+    prompt += `     • 4H: Major trend confirmation\n`;
+    prompt += `     → Do timeframes align or conflict?\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `✍️  STEP 4: WRITE INTELLIGENT CONCLUSION\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `Your conclusion MUST:\n\n`;
+    
+    prompt += `  1. Start with temporal context:\n`;
+    prompt += `     "Since my last analysis [X minutes/hours ago]..."\n\n`;
+    
+    prompt += `  2. Acknowledge prediction accuracy:\n`;
+    prompt += `     "My previous [bullish/bearish] bias on [coin] was [CORRECT/INCORRECT]\n`;
+    prompt += `     because [specific reason with data]."\n\n`;
+    
+    prompt += `  3. Describe market evolution:\n`;
+    prompt += `     "The market has [consolidated/rallied/dumped/reversed]. Key developments:\n`;
+    prompt += `     - [Specific price movement with %]\n`;
+    prompt += `     - [Technical indicator changes]\n`;
+    prompt += `     - [Structure breaks or confirmations]"\n\n`;
+    
+    prompt += `  4. Update market outlook:\n`;
+    prompt += `     "Looking ahead, I expect [specific prediction] because [reasoning].\n`;
+    prompt += `     Key levels to watch: [support/resistance with prices]."\n\n`;
+    
+    prompt += `  5. Demonstrate learning:\n`;
+    prompt += `     If you were wrong: "I underestimated [factor]. Going forward, I will\n`;
+    prompt += `     pay closer attention to [specific indicator/pattern]."\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `🎲 STEP 5: INTELLIGENT AND SMART TRADING DECISIONS\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `For EACH coin, provide decision using CURRENT prices:\n\n`;
+    
+    prompt += `🔹 IF YOU HAVE AN ACTIVE POSITION:\n\n`;
+    
+    prompt += `   Signal Options: "hold" or "close"\n\n`;
+    
+    prompt += `   Choose "hold" when:\n`;
+    prompt += `   ✓ Setup still valid and trending toward TP\n`;
+    prompt += `   ✓ No invalidation triggered\n`;
+    prompt += `   ✓ Risk/reward still favorable\n\n`;
+    
+    prompt += `   Choose "close" when:\n`;
+    prompt += `   ✓ Invalidation condition met\n`;
+    prompt += `   ✓ TP reached or imminent\n`;
+    prompt += `   ✓ Setup broken or reversed\n`;
+    prompt += `   ✓ Better opportunity for capital reallocation\n\n`;
+    
+    prompt += `   Justification must include:\n`;
+    prompt += `   • Current P&L status\n`;
+    prompt += `   • Technical setup validity\n`;
+    prompt += `   • Specific reason for hold/close\n\n`;
+    
+    prompt += `🔹 IF NO ACTIVE POSITION:\n\n`;
+    
+    prompt += `   Signal Options: "long", "short", or "wait"\n\n`;
+    
+    prompt += `   Entry Criteria (must meet ALL):\n`;
+    prompt += `   ✓ Clear trend direction confirmed\n`;
+    prompt += `   ✓ Multiple indicators aligned\n`;
+    prompt += `   ✓ Good risk/reward ratio (min 1:2)\n`;
+    prompt += `   ✓ Sufficient capital available ($${availableCapital.toFixed(2)})\n`;
+    prompt += `   ✓ No conflicting signals across timeframes\n\n`;
+    
+    prompt += `   Price Calculation (CRITICAL!):\n`;
+    prompt += `   • Entry Price: Use CURRENT market price from latest data\n`;
+    prompt += `   • Stop Loss: Calculate from CURRENT price (not old levels)\n`;
+    prompt += `   • Take Profit: Set realistic target based on CURRENT structure\n\n`;
+    
+    prompt += `   Position Sizing:\n`;
+    prompt += `   • Respect available capital: $${availableCapital.toFixed(2)}\n`;
+    prompt += `   • Use appropriate leverage (2x-10x based on confidence)\n`;
+    prompt += `   • Higher confidence = higher size (within limits)\n\n`;
+    
+    prompt += `   Choose "wait" when:\n`;
+    prompt += `   ✓ Conflicting signals\n`;
+    prompt += `   ✓ Consolidation/choppy price action\n`;
+    prompt += `   ✓ Waiting for breakout/breakdown confirmation\n`;
+    prompt += `   ✓ Risk/reward not favorable\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `🚫 FORBIDDEN ACTIONS (WILL CAUSE ERRORS!)\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `❌ DO NOT copy-paste previous conclusion (must be unique!)\n`;
+    prompt += `❌ DO NOT use outdated prices for entry/SL/TP\n`;
+    prompt += `❌ DO NOT ignore active positions (you MUST manage them!)\n`;
+    prompt += `❌ DO NOT open duplicate positions on same coin\n`;
+    prompt += `❌ DO NOT repeat identical reasoning if market changed\n`;
+    prompt += `❌ DO NOT ignore invalidation conditions\n`;
+    prompt += `❌ DO NOT exceed available capital ($${availableCapital.toFixed(2)})\n`;
+    prompt += `❌ DO NOT make decisions without checking CURRENT data\n`;
+    prompt += `❌ DO NOT use generic justifications (be specific!)\n\n`;
+    
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `📤 EXPECTED OUTPUT FORMAT\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `Your response must include:\n\n`;
+    
+    prompt += `✓ UNIQUE conclusion reflecting market evolution (not copy-paste!)\n`;
+    prompt += `✓ Specific price movement analysis with percentages\n`;
+    prompt += `✓ Prediction accuracy acknowledgment (right/wrong + why)\n`;
+    prompt += `✓ UPDATED decisions for ALL 4 coins with CURRENT prices\n`;
+    prompt += `✓ Clear HOLD/CLOSE signals for active positions with P&L status\n`;
+    prompt += `✓ Fresh LONG/SHORT/WAIT signals for coins without positions\n`;
+    prompt += `✓ Specific technical reasoning (not generic statements)\n`;
+    prompt += `✓ Proper JSON format as specified in system prompt\n\n`;
+    
   } else {
-    prompt += `Analyze the current market data and provide trading decisions for BTC, ASTER, GIGGLE, and BNB.\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n`;
+    prompt += `🎯 FIRST ANALYSIS - ESTABLISH YOUR BASELINE STRATEGY\n`;
+    prompt += `═══════════════════════════════════════════════════════════════\n\n`;
+    
+    prompt += `This is your FIRST analysis. You're starting with a clean slate.\n\n`;
+    
+    prompt += `📊 ANALYZE THOROUGHLY:\n\n`;
+    
+    prompt += `For EACH coin (BTC, ASTER, GIGGLE, BNB):\n\n`;
+    
+    prompt += `  1. Price Action Analysis:\n`;
+    prompt += `     • Current price and recent trend\n`;
+    prompt += `     • Key support/resistance levels\n`;
+    prompt += `     • Market structure (higher highs/lows or lower highs/lows)\n\n`;
+    
+    prompt += `  2. Technical Indicators:\n`;
+    prompt += `     • RSI: Overbought/oversold/neutral?\n`;
+    prompt += `     • MACD: Bullish/bearish momentum?\n`;
+    prompt += `     • Bollinger Bands: Volatility and position\n`;
+    prompt += `     • Volume: Confirming or diverging?\n\n`;
+    
+    prompt += `  3. Multi-Timeframe Analysis:\n`;
+    prompt += `     • 5M: Entry timing\n`;
+    prompt += `     • 15M: Short-term trend\n`;
+    prompt += `     • 1H: Medium-term direction\n`;
+    prompt += `     • 4H: Major trend\n\n`;
+    
+    prompt += `🎲 PROVIDE SMART DECISIONS:\n\n`;
+    
+    prompt += `For each coin:\n\n`;
+    
+    prompt += `  Signal: "long", "short", or "wait"\n\n`;
+    
+    prompt += `  If LONG or SHORT:\n`;
+    prompt += `  • Entry Price: CURRENT market price (from latest data)\n`;
+    prompt += `  • Stop Loss: Based on technical levels (support/resistance)\n`;
+    prompt += `  • Take Profit: Realistic target (1.5x-3x risk)\n`;
+    prompt += `  • Size: Respect available capital ($${availableCapital.toFixed(2)})\n`;
+    prompt += `  • Leverage: 2x-10x based on confidence (higher confidence = higher leverage)\n`;
+    prompt += `  • Confidence: 0.0-1.0 (be honest about setup quality)\n`;
+    prompt += `  • Justification: Specific technical reasons with data\n`;
+    prompt += `  • Invalidation: Clear condition that would prove setup wrong\n\n`;
+    
+    prompt += `  If WAIT:\n`;
+    prompt += `  • Explain what you're waiting for (breakout, pullback, confirmation)\n`;
+    prompt += `  • Specify price levels or conditions to watch\n\n`;
+    
+    prompt += `📋 CONCLUSION REQUIREMENTS:\n\n`;
+    
+    prompt += `  • Overall market sentiment (bullish/bearish/neutral)\n`;
+    prompt += `  • Key themes across all coins\n`;
+    prompt += `  • Risk factors to monitor\n`;
+    prompt += `  • Your strategic approach for this session\n\n`;
+    
+    prompt += `Return your complete analysis in the JSON format specified in the system prompt.\n\n`;
   }
   
   prompt += `Return your analysis in the JSON format specified in the system prompt.\n`;
