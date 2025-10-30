@@ -425,7 +425,7 @@ function buildUserPrompt(
       // Check if TP or SL has been hit
       let tpHit = false;
       let slHit = false;
-      
+
       if (pos.side === "LONG") {
         tpHit = currentPrice >= takeProfit;
         slHit = currentPrice <= stopLoss;
@@ -446,23 +446,31 @@ function buildUserPrompt(
       prompt += `  Position Size: $${pos.size_usd.toFixed(2)} (${
         pos.leverage
       }x leverage)\n`;
-      prompt += `  Stop Loss/SL: $${stopLoss.toFixed(2)}${slHit ? " [SL HIT]" : ""}\n`;
-      prompt += `  Take Profit/TP: $${takeProfit.toFixed(2)}${tpHit ? " [TP HIT]" : ""}\n`;
+      prompt += `  Stop Loss/SL: $${stopLoss.toFixed(2)}${
+        slHit ? " [SL HIT]" : ""
+      }\n`;
+      prompt += `  Take Profit/TP: $${takeProfit.toFixed(2)}${
+        tpHit ? " [TP HIT]" : ""
+      }\n`;
       prompt += `  Invalidation Condition: ${pos.invalidation_condition}\n`;
       prompt += `  Exit Strategy: ${pos.exit_strategy}\n`;
-      
+
       // Add informational note if TP or SL hit
       if (tpHit || slHit) {
         prompt += `\n  NOTE:\n`;
         if (tpHit) {
-          prompt += `  - Take Profit level reached: Current $${currentPrice.toFixed(2)} >= TP $${takeProfit.toFixed(2)}\n`;
+          prompt += `  - Take Profit level reached: Current $${currentPrice.toFixed(
+            2
+          )} >= TP $${takeProfit.toFixed(2)}\n`;
         }
         if (slHit) {
-          prompt += `  - Stop Loss level reached: Current $${currentPrice.toFixed(2)} ${pos.side === "LONG" ? "<=" : ">="} SL $${stopLoss.toFixed(2)}\n`;
+          prompt += `  - Stop Loss level reached: Current $${currentPrice.toFixed(
+            2
+          )} ${pos.side === "LONG" ? "<=" : ">="} SL $${stopLoss.toFixed(2)}\n`;
         }
         prompt += `  - Consider whether to close this position or continue holding based on current market conditions.\n`;
       }
-      
+
       prompt += `\n`;
     });
   }
@@ -512,7 +520,7 @@ function buildUserPrompt(
 function mapAgentModelToAIML(agentModel: string): string {
   const modelMap: { [key: string]: string } = {
     grok: "x-ai/grok-4-fast-reasoning",
-    deepseek: "deepseek/deepseek-reasoner-v3.1",
+    deepseek: "deepseek/deepseek-r1",
     gemini: "google/gemini-2.5-pro",
     openai: "openai/gpt-5-chat-latest",
     claude: "anthropic/claude-sonnet-4.5",
