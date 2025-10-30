@@ -1,13 +1,25 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import useSWR from "swr";
 import { fetchAgents, fetchBalanceHistory } from "@/lib/api";
 import type { Agent } from "@/types";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+  Label,
+} from "recharts";
 
 type Mode = "usd" | "percent";
 
-type RangeKey = "ALL" | "24H" | "72H";
+type TimeframeKey = "30m" | "1h" | "6h" | "12h" | "24h";
 
 function normalizeModel(raw: string) {
   const lower = raw.toLowerCase();
@@ -46,129 +58,260 @@ function mapLLM(model?: string) {
       logo: "/icons/qwen_logo.png",
       color: "#653DDC",
     };
-  return { name: raw.toUpperCase(), logo: "", color: autoColor(raw) };
+  return { name: raw.toUpperCase(), logo: "", color: "#9ca3af" };
 }
 
-// Whitelist of LLM models allowed to appear in the chart
-const ALLOWED_LABELS = [
-  "CLAUDE SONNET 4.5",
-  "DEEPSEEK REASONER V3.1",
-  "GEMINI 2.5 PRO",
-  "GROK 4",
-  "GPT 5",
-  "QWEN3 MAX INSTRUCT",
-] as const;
-const isAllowedLabel = (label: string) =>
-  (ALLOWED_LABELS as readonly string[]).includes(label);
-
-function mulberry32(seed: number) {
-  return function () {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function hoursForTimeframe(timeframe: TimeframeKey): number {
+  const map: Record<TimeframeKey, number> = {
+    // "1m": 1 / 60,
+    // "15m": 15 / 60,
+    "30m": 30 / 60,
+    "1h": 1,
+    "6h": 6,
+    "12h": 12,
+    "24h": 24,
   };
+  return map[timeframe];
 }
 
-function hashStrToInt(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
-  return h >>> 0;
-}
-
-function hoursForRange(range: RangeKey): number {
-  if (range === "ALL") return 96;
-  if (range === "72H") return 72;
-  return 24;
-}
-
-// Fallback: Generate simulated data if no historical data exists
 function generateFallbackData(
   agent: Agent,
-  range: RangeKey
-): { time: number; value: number }[] {
-  const hours = hoursForRange(range);
+  timeframe: TimeframeKey
+): { timestamp: number; value: number }[] {
+  const hours = hoursForTimeframe(timeframe);
   const currentBalance = agent.balance || 100;
   const startTime = Date.now() - hours * 60 * 60 * 1000;
-  
-  // Simple linear interpolation from 100 to current balance
-  const points: { time: number; value: number }[] = [];
-  const steps = Math.min(hours, 20); // Max 20 points for fallback
-  
+
+  const points: { timestamp: number; value: number }[] = [];
+  const steps = Math.min(Math.ceil(hours * 4), 20);
+
   for (let i = 0; i <= steps; i++) {
     const progress = i / steps;
     const value = 100 + (currentBalance - 100) * progress;
-    const time = Math.floor((startTime + (hours * 60 * 60 * 1000 * progress)) / 1000);
-    points.push({ time, value });
+    const timestamp = startTime + hours * 60 * 60 * 1000 * progress;
+    points.push({ timestamp, value });
   }
-  
+
   return points;
 }
 
-function simulateSeries(agent: Agent, range: RangeKey) {
-  const hours = hoursForRange(range);
-  const steps = hours * 4;
-  const start = Date.now() - hours * 60 * 60 * 1000;
-  const seed = hashStrToInt(`${agent.id}-${agent.model}`);
-  const rand = mulberry32(seed);
+// Custom legend component to show agent images (memoized for performance)
+const CustomLegend = React.memo(
+  (props: {
+    payload?: Array<{ value: string; color: string }>;
+    hiddenAgents?: Set<string>;
+    onToggle?: (agentName: string) => void;
+  }) => {
+    const { payload, hiddenAgents, onToggle } = props;
 
-  const base = 100;
-  const targetRaw = Number.isFinite(agent.balance)
-    ? agent.balance
-    : base * (1 + (agent.roi ?? 0) / 100) + (agent.total_pnl ?? 0);
-  const target = Number.isFinite(targetRaw) ? targetRaw : base;
-  const drift = (target - base) / steps;
+    if (!payload || !payload.length) return null;
 
-  const vol = Math.max(
-    0.005,
-    Math.min(
-      0.12,
-      (Math.abs(agent.roi ?? 0) / 100) * 0.6 +
-        (agent.trade_count ?? 0) * 0.001 +
-        (agent.active_positions ?? 0) * 0.02
-    )
-  );
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "16px",
+          marginTop: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        {payload.map((entry, index: number) => {
+          // Extract agent info from entry value (name)
+          const agentName = entry.value;
+          const color = entry.color;
+          const isHidden = hiddenAgents?.has(agentName);
 
-  const series: { time: number; value: number }[] = [];
-  let v = base;
-  for (let i = 0; i < steps; i++) {
-    const noise = (rand() - 0.5) * 2 * vol * base;
-    v = Math.max(200, v + drift + noise);
-    const t = Math.floor(
-      (start + i * ((hours * 60 * 60 * 1000) / steps)) / 1000
+          // Find matching logo
+          let logo = "";
+          if (agentName.includes("CLAUDE")) logo = "/icons/Claude_logo.png";
+          else if (agentName.includes("DEEPSEEK"))
+            logo = "/icons/deepseek_logo.png";
+          else if (agentName.includes("GEMINI"))
+            logo = "/icons/Gemini_logo.webp";
+          else if (agentName.includes("GROK")) logo = "/icons/Grok_logo.webp";
+          else if (agentName.includes("GPT")) logo = "/icons/GPT_logo.png";
+          else if (agentName.includes("QWEN")) logo = "/icons/qwen_logo.png";
+
+          return (
+            <div
+              key={`legend-${index}`}
+              onClick={() => onToggle?.(agentName)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                background: isHidden
+                  ? "rgba(30, 41, 59, 0.15)"
+                  : "rgba(30, 41, 59, 0.5)",
+                border: isHidden ? `2px dashed ${color}` : `2px solid ${color}`,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                filter: isHidden ? "grayscale(0.7)" : "none",
+                opacity: isHidden ? 0.5 : 1,
+              }}
+              title={isHidden ? "Click to activate" : "Click to deactivate"}
+            >
+              {logo && (
+                <Image
+                  src={logo}
+                  alt={agentName}
+                  width={18}
+                  height={18}
+                  style={{
+                    borderRadius: "50%",
+                    objectFit: "contain",
+                  }}
+                  unoptimized
+                />
+              )}
+              <div
+                style={{
+                  width: "20px",
+                  height: "3px",
+                  background: color,
+                  borderRadius: "2px",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: isHidden ? "#9ca3af" : "#e5e7eb",
+                  fontWeight: "500",
+                  textDecoration: isHidden ? "line-through" : "none",
+                }}
+              >
+                {agentName}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     );
-    series.push({ time: t, value: v });
   }
-  series[series.length - 1] = {
-    time: Math.floor(Date.now() / 1000),
-    value: target,
-  };
-  return series;
-}
+);
 
-function toPercent(points: { time: number; value: number }[]) {
-  if (!points.length) return points;
-  const base = points[0].value;
-  
-  // Handle zero or very small starting balance
-  if (base === 0 || !Number.isFinite(base)) {
-    // If starting balance is 0, show absolute change from 0
-    return points.map((p) => ({
-      time: p.time,
-      value: p.value, // Show actual value instead of percent
-    }));
+CustomLegend.displayName = "CustomLegend";
+
+// Custom dot component to show agent image and balance at the end of line (memoized)
+const CustomEndDot = React.memo(
+  (props: {
+    cx?: number;
+    cy?: number;
+    payload?: { isLast?: boolean };
+    dataKey?: string;
+    agents?: Agent[];
+    stroke?: string;
+  }) => {
+    const { cx, cy, payload, dataKey, agents, stroke } = props;
+
+    // Only show on the last point
+    if (!payload?.isLast || cx === undefined || cy === undefined) return null;
+
+    const agent = agents?.find((a: Agent) => {
+      const agentKey = mapLLM(a.model).name.toLowerCase().replace(/\s+/g, "_");
+      return dataKey === agentKey;
+    });
+
+    if (!agent) return null;
+
+    const { logo, color } = mapLLM(agent.model);
+    const balance = agent.balance || 100;
+    const lineColor = stroke || color; // Use line color if provided
+
+    return (
+      <g>
+        {/* Outer glow circles with line color */}
+        <circle cx={cx} cy={cy} r={32} fill={lineColor} opacity={0.15} />
+        <circle cx={cx} cy={cy} r={24} fill={lineColor} opacity={0.3} />
+
+        {/* Main circle background with line color */}
+        <circle cx={cx} cy={cy} r={18} fill={lineColor} opacity={0.9} />
+
+        {/* Agent logo (using foreignObject to embed image) */}
+        {logo && (
+          <foreignObject x={cx - 16} y={cy - 16} width={32} height={32}>
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "transparent",
+              }}
+            >
+              <Image
+                src={logo}
+                alt={agent.model}
+                width={26}
+                height={26}
+                style={{
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 0 3px rgba(0,0,0,0.4))",
+                }}
+                unoptimized
+              />
+            </div>
+          </foreignObject>
+        )}
+
+        {/* Balance label below the circle */}
+        <foreignObject x={cx - 35} y={cy + 25} width={70} height={28}>
+          <div
+            style={{
+              background: "rgba(0, 0, 0, 0.9)",
+              color: "white",
+              padding: "4px 8px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              whiteSpace: "nowrap",
+              border: `2px solid ${lineColor}`,
+              boxShadow: `0 0 8px ${lineColor}40`,
+              textAlign: "center",
+            }}
+          >
+            ${balance.toFixed(2)}
+          </div>
+        </foreignObject>
+      </g>
+    );
   }
-  
-  return points.map((p) => ({
-    time: p.time,
-    value: ((p.value - base) / base) * 100,
-  }));
+);
+
+CustomEndDot.displayName = "CustomEndDot";
+
+// Reduce data points for better performance on large timeframes
+function sampleData<T extends Record<string, number | string | boolean>>(
+  data: T[],
+  maxPoints: number
+): T[] {
+  if (data.length <= maxPoints) return data;
+
+  const step = Math.ceil(data.length / maxPoints);
+  const sampled: T[] = [];
+
+  for (let i = 0; i < data.length; i += step) {
+    sampled.push(data[i]);
+  }
+
+  // Always include the last point
+  if (sampled[sampled.length - 1] !== data[data.length - 1]) {
+    sampled.push(data[data.length - 1]);
+  }
+
+  return sampled;
 }
 
 export default function AccountValueChart() {
   const [mode, setMode] = useState<Mode>("usd");
-  const [range, setRange] = useState<RangeKey>("ALL");
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [timeframe, setTimeframe] = useState<TimeframeKey>("1h");
+  const [hiddenAgents, setHiddenAgents] = useState<Set<string>>(new Set());
 
   const { data: agents, isLoading } = useSWR<Agent[]>(
     ["supabase", "agents-for-chart"],
@@ -178,197 +321,109 @@ export default function AccountValueChart() {
       dedupingInterval: 8000,
       revalidateOnFocus: false,
       fallbackData: [],
+      keepPreviousData: true, // Prevent flash when revalidating
     }
   );
+
+  // Toggle agent visibility (memoized)
+  const toggleAgent = useCallback((agentName: string) => {
+    setHiddenAgents((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentName)) {
+        newSet.delete(agentName);
+      } else {
+        newSet.add(agentName);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Fetch historical balance data
   const { data: balanceHistory } = useSWR(
-    ["balance-history", range],
-    () => fetchBalanceHistory(hoursForRange(range)),
+    ["balance-history", timeframe],
+    () => fetchBalanceHistory(hoursForTimeframe(timeframe)),
     {
-      refreshInterval: 30000, // Refresh every 30 seconds
+      refreshInterval: 30000,
       dedupingInterval: 15000,
       revalidateOnFocus: false,
       fallbackData: {},
+      keepPreviousData: true, // Smooth transition when changing timeframe
     }
   );
 
-  const agentSeries = useMemo(() => {
-    const map: Record<string, { time: number; value: number }[]> = {};
-    const now = Date.now();
-    const rangeMs = hoursForRange(range) * 60 * 60 * 1000;
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    if (!agents || agents.length === 0) return [];
+
+    const rangeMs = hoursForTimeframe(timeframe) * 60 * 60 * 1000;
+    const now = new Date().getTime();
     const startTime = now - rangeMs;
-    
-    (agents ?? []).forEach((a) => {
-      const label = mapLLM(a.model).name;
-      const history = balanceHistory?.[a.id];
-      
+
+    // Collect all timestamps across all agents
+    const timestampSet = new Set<number>();
+    const agentDataMap: Record<string, Map<number, number>> = {};
+
+    agents.forEach((agent) => {
+      const agentKey = mapLLM(agent.model)
+        .name.toLowerCase()
+        .replace(/\s+/g, "_");
+      const history = balanceHistory?.[agent.id];
+      const dataMap = new Map<number, number>();
+
       if (history && history.length > 0) {
-        // Use real historical data - filter by timeframe and sort
-        const filteredData = history
-          .map(h => ({
-            time: Math.floor(new Date(h.timestamp).getTime() / 1000),
-            value: h.balance,
-            timestamp: new Date(h.timestamp).getTime(),
-          }))
-          .filter(h => {
-            // Filter by timeframe AND validate data
-            return h.timestamp >= startTime && 
-                   Number.isFinite(h.value) && 
-                   h.value >= 0; // Allow zero balance
-          })
-          .sort((a, b) => a.time - b.time); // Ensure chronological order
-        
-        // Deduplicate by timestamp (keep last value if multiple entries at same time)
-        const deduplicated: { time: number; value: number }[] = [];
-        const timeMap = new Map<number, number>();
-        
-        filteredData.forEach(({ time, value }) => {
-          timeMap.set(time, value); // Overwrites if duplicate
-        });
-        
-        // Convert back to array
-        timeMap.forEach((value, time) => {
-          deduplicated.push({ time, value });
-        });
-        
-        // Sort again after deduplication
-        deduplicated.sort((a, b) => a.time - b.time);
-        
-        map[label] = deduplicated;
-        
-        // If no data in range, use fallback
-        if (map[label].length === 0) {
-          map[label] = generateFallbackData(a, range);
-        }
+        history
+          .filter((h) => new Date(h.timestamp).getTime() >= startTime)
+          .forEach((h) => {
+            const timestamp = new Date(h.timestamp).getTime();
+            timestampSet.add(timestamp);
+            dataMap.set(timestamp, h.balance);
+          });
       } else {
-        // Fallback to simulated data if no history exists yet
-        map[label] = generateFallbackData(a, range);
-      }
-    });
-    
-    return map;
-  }, [agents, range, balanceHistory]);
-
-  const allLabels = useMemo(
-    () => Array.from(new Set((agents ?? []).map((a) => mapLLM(a.model).name))),
-    [agents]
-  );
-  const [selected, setSelected] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!agents || agents.length === 0 || selected.length > 0) return;
-    const unique = Array.from(
-      new Set((agents ?? []).map((a) => mapLLM(a.model).name))
-    );
-    if (unique.length > 0) setSelected(unique);
-  }, [agents, selected.length]);
-
-  const labels = selected.filter((l) => agentSeries[l]);
-  const ready = labels.length > 0;
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !ready) return;
-
-    let chart: any = null;
-    let cleanup: () => void = () => {};
-
-    (async () => {
-      const lib = await import("lightweight-charts");
-      chart = lib.createChart(el, {
-        width: el.clientWidth,
-        height: 480,
-        layout: {
-          background: { type: lib.ColorType.Solid, color: "transparent" },
-          textColor: "#e5e7eb",
-        },
-        grid: {
-          vertLines: { color: "#1f2937" },
-          horzLines: { color: "#1f2937" },
-        },
-        timeScale: {
-          borderColor: "#1f2937",
-          timeVisible: true,
-          secondsVisible: false,
-          rightOffset: 5,
-          barSpacing: 6,
-          minBarSpacing: 3,
-          fixLeftEdge: true,
-          fixRightEdge: true,
-        },
-        rightPriceScale: {
-          borderColor: "#1f2937",
-          scaleMargins: {
-            top: 0.1,
-            bottom: 0.1,
-          },
-        },
-      });
-
-      const basePoints = (agentSeries[labels[0]] ?? []).map((p) => ({
-        time: p.time,
-        value: 100,
-      }));
-      const baseline = chart.addSeries(lib.LineSeries, {
-        color: "#9ca3af",
-        lineWidth: 1,
-        lineStyle: lib.LineStyle.Dotted,
-      });
-      baseline.setData(
-        mode === "percent"
-          ? basePoints.map((p) => ({ time: p.time, value: 0 }))
-          : basePoints
-      );
-
-      labels.forEach((label) => {
-        const { color } = mapLLM(label);
-        const s = chart.addSeries(lib.LineSeries, {
-          color,
-          lineWidth: 3,
-          priceLineVisible: false,
-          lastValueVisible: true,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 4,
+        // Use fallback data
+        const fallback = generateFallbackData(agent, timeframe);
+        fallback.forEach((p) => {
+          timestampSet.add(p.timestamp);
+          dataMap.set(p.timestamp, p.value);
         });
-        const data = agentSeries[label] ?? [];
-        const chartData = mode === "percent" ? toPercent(data) : data;
-        
-        // Ensure data is sorted and valid
-        const validData = chartData
-          .filter(d => {
-            // Strict validation
-            return d.time && 
-                   Number.isFinite(d.time) && 
-                   Number.isFinite(d.value) &&
-                   d.time > 0;
-          })
-          .sort((a, b) => a.time - b.time);
-        
-        // Only set data if we have valid points
-        if (validData.length > 0) {
-          s.setData(validData);
+      }
+
+      agentDataMap[agentKey] = dataMap;
+    });
+
+    // Sort timestamps
+    const timestamps = Array.from(timestampSet).sort((a, b) => a - b);
+
+    // Build chart data array
+    const data = timestamps.map((timestamp, index) => {
+      const point: Record<string, number | string | boolean> = {
+        timestamp,
+        time: new Date(timestamp).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        isLast: index === timestamps.length - 1,
+      };
+
+      agents.forEach((agent) => {
+        const agentKey = mapLLM(agent.model)
+          .name.toLowerCase()
+          .replace(/\s+/g, "_");
+        const value = agentDataMap[agentKey]?.get(timestamp);
+
+        if (value !== undefined) {
+          point[agentKey] =
+            mode === "percent" ? ((value - 100) / 100) * 100 : value;
         }
       });
-      
-      // Fit content to show all data points
-      chart.timeScale().fitContent();
 
-      const onResize = () => chart.applyOptions({ width: el.clientWidth });
-      window.addEventListener("resize", onResize);
-      cleanup = () => {
-        window.removeEventListener("resize", onResize);
-        chart.remove();
-      };
-    })();
+      return point;
+    });
 
-    return () => cleanup();
-  }, [ready, mode, range, labels.join("|")]);
-
-  const legendSpecs = useMemo(
-    () => allLabels.map((k) => mapLLM(k)),
-    [allLabels]
-  );
+    // Sample data for better performance on large timeframes
+    const maxPoints =
+      timeframe === "24h" ? 100 : timeframe === "12h" ? 80 : 150;
+    return sampleData(data, maxPoints);
+  }, [agents, balanceHistory, timeframe, mode]);
 
   return (
     <div className="rounded-xl bg-black/90 border border-slate-800/50 p-4 shadow-xl backdrop-blur-sm">
@@ -377,6 +432,7 @@ export default function AccountValueChart() {
           AGENTS PERFORMANCE (Start $100 → Current Balance)
         </div>
         <div className="flex items-center gap-2">
+          {/* USD vs Percent Toggle */}
           <button
             className={`px-2 py-1 rounded text-xs ${
               mode === "usd"
@@ -397,18 +453,20 @@ export default function AccountValueChart() {
           >
             %
           </button>
+
+          {/* Timeframe Selector */}
           <div className="ml-4 flex items-center gap-1">
-            {(["ALL", "72H", "24H"] as RangeKey[]).map((rk) => (
+            {(["30m", "1h", "6h", "12h", "24h"] as TimeframeKey[]).map((tf) => (
               <button
-                key={rk}
+                key={tf}
                 className={`px-2 py-1 rounded text-xs ${
-                  range === rk
+                  timeframe === tf
                     ? "bg-slate-800 text-slate-100"
                     : "bg-slate-800/40 text-slate-400"
                 }`}
-                onClick={() => setRange(rk)}
+                onClick={() => setTimeframe(tf)}
               >
-                {rk}
+                {tf.toUpperCase()}
               </button>
             ))}
           </div>
@@ -424,7 +482,7 @@ export default function AccountValueChart() {
             const roi = agent.roi || 0;
             const roiColor = roi >= 0 ? "text-green-400" : "text-red-400";
             const roiSign = roi >= 0 ? "+" : "";
-            
+
             return (
               <div
                 key={agent.id}
@@ -450,7 +508,8 @@ export default function AccountValueChart() {
                       ${balance.toFixed(2)}
                     </span>
                     <span className={`text-xs font-medium ${roiColor}`}>
-                      ({roiSign}{roi.toFixed(1)}%)
+                      ({roiSign}
+                      {roi.toFixed(1)}%)
                     </span>
                   </div>
                 </div>
@@ -460,111 +519,105 @@ export default function AccountValueChart() {
         </div>
       )}
 
-      {!ready && (
-        <div className="text-xs text-slate-400">
-          {isLoading ? "Loading agents…" : "No agent data available."}
-        </div>
-      )}
+      {/* Recharts Line Chart */}
+      {chartData && chartData.length > 0 ? (
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 20, right: 50, bottom: 40, left: 10 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+            <XAxis
+              dataKey="time"
+              stroke="#9ca3af"
+              style={{ fontSize: "11px" }}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              stroke="#9ca3af"
+              style={{ fontSize: "11px" }}
+              tickFormatter={(value) =>
+                mode === "percent"
+                  ? `${value.toFixed(1)}%`
+                  : `$${value.toFixed(0)}`
+              }
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                border: "1px solid #374151",
+                borderRadius: "8px",
+              }}
+              labelStyle={{ color: "#9ca3af" }}
+              formatter={(value: number) =>
+                mode === "percent"
+                  ? `${value.toFixed(2)}%`
+                  : `$${value.toFixed(2)}`
+              }
+              animationDuration={200}
+            />
+            <Legend
+              content={
+                <CustomLegend
+                  hiddenAgents={hiddenAgents}
+                  onToggle={toggleAgent}
+                />
+              }
+              wrapperStyle={{ fontSize: "12px" }}
+            />
 
-      <div ref={containerRef} className="w-full h-[480px]" />
+            {/* Reference line at starting point */}
+            {mode === "percent" && (
+              <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3">
+                <Label
+                  value="Start (0%)"
+                  position="insideTopLeft"
+                  style={{ fill: "#9ca3af", fontSize: "10px" }}
+                />
+              </ReferenceLine>
+            )}
+            {mode === "usd" && (
+              <ReferenceLine y={100} stroke="#9ca3af" strokeDasharray="3 3">
+                <Label
+                  value="Start ($100)"
+                  position="insideTopLeft"
+                  style={{ fill: "#9ca3af", fontSize: "10px" }}
+                />
+              </ReferenceLine>
+            )}
 
-      {legendSpecs.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {legendSpecs.map((spec) => {
-            const active = labels.includes(spec.name);
-            return (
-              <button
-                key={spec.name}
-                onClick={() => {
-                  setSelected((prev) =>
-                    prev.includes(spec.name)
-                      ? prev.filter((l) => l !== spec.name)
-                      : [...prev, spec.name]
-                  );
-                }}
-                className={`flex items-center gap-2 text-xs px-2 py-1 rounded border transition-colors ${
-                  active
-                    ? "bg-slate-800 text-slate-100"
-                    : "bg-slate-800/40 text-slate-400"
-                }`}
-                style={
-                  active
-                    ? {
-                        borderColor: spec.color,
-                        boxShadow: `0 0 0 1px ${spec.color}55, 0 0 8px ${spec.color}33`,
-                      }
-                    : { borderColor: "#334155" }
-                }
-                title={active ? "Click to hide" : "Click to show"}
-              >
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: spec.color }}
-                ></span>
-                {spec.logo && (
-                  <Image
-                    src={spec.logo}
-                    alt={spec.name}
-                    width={16}
-                    height={16}
-                    className="h-4 w-4 rounded-sm"
+            {/* Lines for each agent */}
+            {agents &&
+              agents.map((agent) => {
+                const { name, color } = mapLLM(agent.model);
+                const agentKey = name.toLowerCase().replace(/\s+/g, "_");
+                const isHidden = hiddenAgents.has(name);
+
+                return (
+                  <Line
+                    key={agent.id}
+                    type="monotone"
+                    dataKey={agentKey}
+                    stroke={color}
+                    strokeWidth={2}
+                    strokeOpacity={isHidden ? 0 : 1}
+                    activeDot={isHidden ? false : { r: 6 }}
+                    name={name}
+                    dot={isHidden ? false : <CustomEndDot agents={agents} />}
+                    hide={false}
+                    isAnimationActive={true}
                   />
-                )}
-                <span>{spec.name}</span>
-              </button>
-            );
-          })}
-          <span className="text-[10px] text-slate-500">
-            click label to toggle
-          </span>
+                );
+              })}
+          </LineChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="text-xs text-slate-400 h-[400px] flex items-center justify-center">
+          {isLoading
+            ? "Loading chart data…"
+            : "No data available for selected timeframe."}
         </div>
       )}
     </div>
   );
-}
-
-function autoColor(label: string) {
-  const seed = hashStrToInt(label);
-  const rng = mulberry32(seed);
-  const h = Math.floor(rng() * 360);
-  const s = 70;
-  const l = 55;
-  const S = s / 100;
-  const L = l / 100;
-  const c = (1 - Math.abs(2 * L - 1)) * S;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = L - c / 2;
-  let r = 0,
-    g = 0,
-    b = 0;
-  if (h < 60) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (h < 120) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (h < 180) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (h < 240) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (h < 300) {
-    r = x;
-    g = 0;
-    b = c;
-  } else {
-    r = c;
-    g = 0;
-    b = x;
-  }
-  const toHex = (v: number) =>
-    Math.round((v + m) * 255)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }

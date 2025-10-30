@@ -36,7 +36,7 @@ const fmtCurrency = (n?: number) =>
   typeof n === "number" ? `$${n.toLocaleString()}` : "-";
 const fmtCurrencySigned = (n?: number) =>
   typeof n === "number"
-    ? `${n >= 0 ? "+" : ""}$${Math.abs(n).toLocaleString()}`
+    ? `${n >= 0 ? "+" : "-"}$${Math.abs(n).toLocaleString()}`
     : "-";
 const fmtPercent = (n?: number) =>
   typeof n === "number" ? `${n.toFixed(2)}%` : "-";

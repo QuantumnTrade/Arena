@@ -205,27 +205,29 @@ export default function Page() {
                 Active Agents Summary
               </div>
               <AgentsTable
-                agents={(agents ?? []).filter((a) => {
-                  const raw = a.model ?? "";
-                  const normalized = raw
-                    .toLowerCase()
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/\s+/g, "");
-                  const allowed = [
-                    "claude",
-                    "anthropic",
-                    "sonnet",
-                    "deepseek",
-                    "gemini",
-                    "grok",
-                    "xai",
-                    "openai",
-                    "qwen",
-                    "gpt",
-                  ];
-                  return allowed.some((k) => normalized.includes(k));
-                })}
+                agents={(agents ?? [])
+                  .filter((a) => {
+                    const raw = a.model ?? "";
+                    const normalized = raw
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .replace(/\s+/g, "");
+                    const allowed = [
+                      "claude",
+                      "anthropic",
+                      "sonnet",
+                      "deepseek",
+                      "gemini",
+                      "grok",
+                      "xai",
+                      "openai",
+                      "qwen",
+                      "gpt",
+                    ];
+                    return allowed.some((k) => normalized.includes(k));
+                  })
+                  .sort((a, b) => (b.total_pnl || 0) - (a.total_pnl || 0))}
                 loading={agentsLoading}
               />
               {agentsError && (
