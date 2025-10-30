@@ -16,8 +16,9 @@ let isAnalyzing = false;
 let lastAnalysisTime: Date | null = null;
 let lastAnalysisResults: Record<string, unknown> | null = null;
 
-const ANALYSIS_INTERVAL_MS = 150000; // 2.5 minutes (150 seconds)
+const ANALYSIS_INTERVAL_MS = 300000; // 5 minutes (300 seconds) - Reduced frequency to avoid Vercel rate limits
 const API_ENDPOINT = '/api/ai-analysis-all';
+const JITTER_MS = 30000; // Add 0-30s random jitter to prevent burst patterns
 
 /**
  * Start the AI analysis background job
@@ -28,15 +29,21 @@ export function startAIAnalysisJob() {
     return;
   }
 
-  console.log('[AI Analysis Job] Starting background job (interval: 2.5 minutes)');
+  console.log('[AI Analysis Job] Starting background job (interval: 5 minutes with jitter)');
   isRunning = true;
 
-  // Run immediately on start
-  runAnalysis();
-
-  // Then run every 2.5 minutes
-  intervalId = setInterval(() => {
+  // Run immediately on start (with initial delay to avoid startup burst)
+  setTimeout(() => {
     runAnalysis();
+  }, 5000); // 5 second initial delay
+
+  // Then run every 5 minutes with random jitter
+  intervalId = setInterval(() => {
+    // Add random jitter (0-30s) to prevent predictable burst patterns
+    const jitter = Math.floor(Math.random() * JITTER_MS);
+    setTimeout(() => {
+      runAnalysis();
+    }, jitter);
   }, ANALYSIS_INTERVAL_MS);
 }
 

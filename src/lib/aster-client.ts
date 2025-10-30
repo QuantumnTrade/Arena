@@ -142,7 +142,12 @@ function buildQueryString(params: Record<string, any>): string {
 // Request queue for proper rate limiting across parallel requests
 let requestQueue: Promise<any> = Promise.resolve();
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 300; // Increased to 300ms between requests for better stability
+const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
+
+// Server time sync
+let serverTimeOffset = 0; // Difference between local time and server time
+let lastTimeSyncTime = 0;
+const TIME_SYNC_INTERVAL = 300000; // Re-sync every 5 minutes for better stability
 
 /**
  * Make authenticated request to ASTER V2 API with HMAC signature
@@ -212,12 +217,30 @@ async function executeRequest<T>(
     throw new Error("ASTER secret key is not configured");
   }
 
-  // Use server time with minimal offset (ASTER recommends staying close to server time)
-  const timestamp = Date.now();
+  // Sync server time if needed (first request or every 5 minutes)
+  const now = Date.now();
+  if (now - lastTimeSyncTime > TIME_SYNC_INTERVAL) {
+    try {
+      // Fetch server time from ASTER
+      const serverTimeResponse = await fetch(`${ASTER_BASE_URL}/fapi/v1/time`);
+      if (serverTimeResponse.ok) {
+        const serverTimeData = await serverTimeResponse.json();
+        const serverTime = serverTimeData.serverTime;
+        serverTimeOffset = serverTime - Date.now();
+        lastTimeSyncTime = Date.now();
+        console.log(`[ASTER V2] Time synced: offset = ${serverTimeOffset}ms`);
+      }
+    } catch (error) {
+      console.warn('[ASTER V2] Failed to sync server time, using local time');
+    }
+  }
+
+  // Use server time with calculated offset
+  const timestamp = Date.now() + serverTimeOffset;
   const allParams = {
     ...params,
     timestamp,
-    recvWindow: 5000, // Reduced from 10000 to 5000 for better security
+    recvWindow: 10000, // Increased to 10000 for better tolerance
   };
 
   let queryString = buildQueryString(allParams);

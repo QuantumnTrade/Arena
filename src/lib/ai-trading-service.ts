@@ -453,8 +453,19 @@ export async function executeAITradingForAllAgents(
   // Track completion times for each agent
   const agentStartTimes = new Map<string, number>();
 
-  // Execute all agents in parallel with individual completion logging
-  const promises = activeAgents.map(async (agent) => {
+  // Execute all agents with staggered delays to avoid Vercel rate limiting
+  // Each agent starts 10-15 seconds after the previous one
+  const promises = activeAgents.map(async (agent, index) => {
+    // Stagger agent execution: 0s, 12s, 24s, 36s, etc.
+    const staggerDelay = index * (10000 + Math.floor(Math.random() * 5000)); // 10-15s between agents
+    
+    if (staggerDelay > 0) {
+      console.log(
+        `[QuantumnTrade AI] ⏱️ ${agent.model} will start in ${(staggerDelay / 1000).toFixed(1)}s (staggered to avoid rate limits)`
+      );
+      await new Promise(resolve => setTimeout(resolve, staggerDelay));
+    }
+    
     const agentStart = Date.now();
     agentStartTimes.set(agent.id, agentStart);
 
