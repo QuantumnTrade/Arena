@@ -492,6 +492,7 @@ function LatestTab({
 
 // Helper function to get coin icon based on symbol
 function getCoinIcon(symbol: string): string {
+  if (!symbol) return "/icons/btc_icon.png"; // Default fallback
   const symbolUpper = symbol.toUpperCase();
 
   if (symbolUpper === "BTC") {
