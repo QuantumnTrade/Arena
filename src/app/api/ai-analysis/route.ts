@@ -411,6 +411,8 @@ function buildUserPrompt(
     activePositions.forEach((pos, idx) => {
       const currentPrice = marketPrice[pos.symbol];
       const entryPrice = pos.entry_price;
+      const takeProfit = pos.take_profit;
+      const stopLoss = pos.stop_loss;
 
       // Calculate PnL to make entry vs current distinction crystal clear
       const pnlPercent =
@@ -419,6 +421,19 @@ function buildUserPrompt(
           : ((entryPrice - currentPrice) / entryPrice) * 100;
       const pnlUsd = (pos.size_usd * pnlPercent) / 100;
       const pnlSign = pnlPercent >= 0 ? "+" : "";
+
+      // Check if TP or SL has been hit
+      let tpHit = false;
+      let slHit = false;
+      
+      if (pos.side === "LONG") {
+        tpHit = currentPrice >= takeProfit;
+        slHit = currentPrice <= stopLoss;
+      } else {
+        // SHORT
+        tpHit = currentPrice <= takeProfit;
+        slHit = currentPrice >= stopLoss;
+      }
 
       prompt += `========================================\n`;
       prompt += `POSITION ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
@@ -431,10 +446,23 @@ function buildUserPrompt(
       prompt += `  Position Size: $${pos.size_usd.toFixed(2)} (${
         pos.leverage
       }x leverage)\n`;
-      prompt += `  Stop Loss: $${pos.stop_loss.toFixed(2)}\n`;
-      prompt += `  Take Profit: $${pos.take_profit.toFixed(2)}\n`;
+      prompt += `  Stop Loss/SL: $${stopLoss.toFixed(2)}${slHit ? " [SL HIT]" : ""}\n`;
+      prompt += `  Take Profit/TP: $${takeProfit.toFixed(2)}${tpHit ? " [TP HIT]" : ""}\n`;
       prompt += `  Invalidation Condition: ${pos.invalidation_condition}\n`;
-      prompt += `  Exit Strategy: Hold for ${pos.exit_strategy}\n`;
+      prompt += `  Exit Strategy: ${pos.exit_strategy}\n`;
+      
+      // Add informational note if TP or SL hit
+      if (tpHit || slHit) {
+        prompt += `\n  NOTE:\n`;
+        if (tpHit) {
+          prompt += `  - Take Profit level reached: Current $${currentPrice.toFixed(2)} >= TP $${takeProfit.toFixed(2)}\n`;
+        }
+        if (slHit) {
+          prompt += `  - Stop Loss level reached: Current $${currentPrice.toFixed(2)} ${pos.side === "LONG" ? "<=" : ">="} SL $${stopLoss.toFixed(2)}\n`;
+        }
+        prompt += `  - Consider whether to close this position or continue holding based on current market conditions.\n`;
+      }
+      
       prompt += `\n`;
     });
   }
@@ -443,12 +471,35 @@ function buildUserPrompt(
   prompt += `Analyze the current market data and provide trading decisions for BTC, ETH, SOL, BNB, ASTER and GIGGLE.\n`;
   prompt += `\n`;
   prompt += `CRITICAL RULES FOR ACTIVE POSITIONS:\n`;
+  prompt += `\n`;
+  prompt += `A. ENTRY PRICE RULES (for HOLD decisions):\n`;
   prompt += `1. When deciding to HOLD an existing position, you MUST use the ENTRY PRICE shown above, NOT the current market price.\n`;
   prompt += `2. The "ENTRY PRICE (when opened)" is the price at which you originally entered the position.\n`;
   prompt += `3. The "CURRENT MARKET PRICE (now)" is the current market price for reference only.\n`;
   prompt += `4. For HOLD decisions, your entry_price in the JSON response MUST match the "ENTRY PRICE (when opened)" exactly.\n`;
   prompt += `5. Example: If position shows "ENTRY PRICE (when opened): $192.76", your HOLD decision must use entry_price: 192.76\n`;
   prompt += `6. DO NOT use the current market price as the entry price for HOLD decisions!\n`;
+  prompt += `\n`;
+  prompt += `B. TAKE PROFIT & STOP LOSS AWARENESS:\n`;
+  prompt += `7. Pay attention to [TP HIT] and [SL HIT] indicators shown next to TP/SL values.\n`;
+  prompt += `8. When you see these indicators:\n`;
+  prompt += `   - [TP HIT]: The take profit level has been reached - consider closing to secure profits\n`;
+  prompt += `   - [SL HIT]: The stop loss level has been reached - consider closing to limit losses\n`;
+  prompt += `9. You can still decide to HOLD if market conditions suggest continuation is favorable.\n`;
+  prompt += `10. When deciding to HOLD despite TP/SL hit, provide clear reasoning in your analysis.\n`;
+  prompt += `\n`;
+  prompt += `C. EXAMPLES:\n`;
+  prompt += `Example 1 - TP Hit (LONG):\n`;
+  prompt += `  Entry: $3908.57, Current: $3932.30, TP: $3921.30 [TP HIT]\n`;
+  prompt += `  → TP reached, consider CLOSE to secure profit OR HOLD if bullish continuation expected\n`;
+  prompt += `\n`;
+  prompt += `Example 2 - SL Hit (LONG):\n`;
+  prompt += `  Entry: $192.76, Current: $191.20, SL: $191.25 [SL HIT]\n`;
+  prompt += `  → SL reached, consider CLOSE to limit loss OR HOLD if reversal expected\n`;
+  prompt += `\n`;
+  prompt += `Example 3 - Normal HOLD (LONG):\n`;
+  prompt += `  Entry: $192.76, Current: $193.50, TP: $194.76, SL: $191.25\n`;
+  prompt += `  → Price within range, can HOLD with entry_price: 192.76\n`;
   prompt += `\n`;
   prompt += `Return your analysis in the JSON format specified in the system prompt.\n`;
 
