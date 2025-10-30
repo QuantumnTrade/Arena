@@ -478,6 +478,13 @@ function buildUserPrompt(
   prompt += `\n=== INSTRUCTIONS ===\n`;
   prompt += `Analyze the current market data and provide trading decisions for BTC, ETH, SOL, BNB, ASTER and GIGGLE.\n`;
   prompt += `\n`;
+  prompt += `IMPORTANT - DIRECTIONAL BALANCE:\n`;
+  prompt += `- Actively look for BOTH bullish (LONG) and bearish (SHORT) setups with equal consideration\n`;
+  prompt += `- Do NOT favor LONG over SHORT or vice versa - trade what the market structure shows\n`;
+  prompt += `- Bearish divergence, resistance rejections, and premium zones are as valid as bullish setups\n`;
+  prompt += `- If you find yourself only seeing LONG setups, deliberately check for SHORT opportunities\n`;
+  prompt += `- Quality SHORT setups should be executed with the same confidence as LONG setups\n`;
+  prompt += `\n`;
   prompt += `CRITICAL RULES FOR ACTIVE POSITIONS:\n`;
   prompt += `\n`;
   prompt += `A. ENTRY PRICE RULES (for HOLD decisions):\n`;

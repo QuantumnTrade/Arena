@@ -258,7 +258,7 @@ export function getSystemPromptV2(): string {
 - Order Blocks: Last candle before strong move
 - Fair Value Gaps: Imbalance zones
 - Liquidity Sweeps: Stop hunts before reversal
-- Premium/Discount: Buy discount (<50%), sell premium (>50%)
+- Premium/Discount: LONG at discount (<50%), SHORT at premium (>50%)
 
 ## TECHNICAL INDICATORS
 
@@ -510,6 +510,7 @@ export function getSystemPromptV3(): string {
 - Adaptive: Adjust to market regime and performance
 - Self-correcting: Learn from results, never stop learning
 - Quality over quantity
+- **Directional neutrality: LONG and SHORT are equally valid — trade what the market shows, not your bias**
 
 ## MULTI-TIMEFRAME ANALYSIS
 
@@ -654,7 +655,8 @@ export function getSystemPromptV3(): string {
 ✓ Drawdown >20% = survival mode, not surrender  
 ✓ Maximize profits through discipline, not frequency  
 ✓ Quality over quantity — A+ setups only
-✓ Use your reasoning to interpret rules contextually, strict compliance without creativity is suboptimal`;
+✓ Use your reasoning to interpret rules contextually, strict compliance without creativity is suboptimal
+✓ **NO DIRECTIONAL BIAS: SHORT opportunities are as valuable as LONG — bearish setups deserve equal consideration**`;
 }
 
 export interface Ticker {
