@@ -231,21 +231,51 @@ export async function executeLong(
   credentials?: AsterCredentials
 ): Promise<ExecutionResult> {
   try {
+    // CRITICAL VALIDATION: Prevent invalid parameters from reaching ASTER API
+    if (!decision.size_usd || decision.size_usd <= 0) {
+      const errorMsg = `Invalid size_usd: ${decision.size_usd} (must be > 0)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
+    if (!decision.leverage || decision.leverage <= 0 || decision.leverage > 125) {
+      const errorMsg = `Invalid leverage: ${decision.leverage} (must be 1-125)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
+    if (!decision.entry_price || decision.entry_price <= 0) {
+      const errorMsg = `Invalid entry_price: ${decision.entry_price} (must be > 0)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
     const symbol = toAsterSymbol(decision.coin);
     const quantity = await calculateQuantity(decision.size_usd, decision.entry_price, symbol);
+    
+    // Validate calculated quantity
+    if (!quantity || quantity <= 0) {
+      const errorMsg = `Invalid calculated quantity: ${quantity} (size_usd: ${decision.size_usd}, entry_price: ${decision.entry_price})`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
 
+    // Cap leverage at 10x for safety
+    const safeLeverage = Math.min(Math.max(decision.leverage, 1), 10);
+    
     console.log(`[ASTER Execution] Opening LONG position:`, {
       symbol,
       quantity,
       entry_price: decision.entry_price,
       size_usd: decision.size_usd,
-      leverage: decision.leverage > 10 ? 10 : decision.leverage,
+      leverage: safeLeverage,
+      originalLeverage: decision.leverage,
     });
 
     // Set leverage first
     await AsterClient.changeInitialLeverage(
       symbol,
-      decision.leverage > 10 ? 10 : decision.leverage,
+      safeLeverage,
       credentials
     );
 
@@ -325,21 +355,51 @@ export async function executeShort(
   credentials?: AsterCredentials
 ): Promise<ExecutionResult> {
   try {
+    // CRITICAL VALIDATION: Prevent invalid parameters from reaching ASTER API
+    if (!decision.size_usd || decision.size_usd <= 0) {
+      const errorMsg = `Invalid size_usd: ${decision.size_usd} (must be > 0)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
+    if (!decision.leverage || decision.leverage <= 0 || decision.leverage > 125) {
+      const errorMsg = `Invalid leverage: ${decision.leverage} (must be 1-125)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
+    if (!decision.entry_price || decision.entry_price <= 0) {
+      const errorMsg = `Invalid entry_price: ${decision.entry_price} (must be > 0)`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
+    
     const symbol = toAsterSymbol(decision.coin);
     const quantity = await calculateQuantity(decision.size_usd, decision.entry_price, symbol);
+    
+    // Validate calculated quantity
+    if (!quantity || quantity <= 0) {
+      const errorMsg = `Invalid calculated quantity: ${quantity} (size_usd: ${decision.size_usd}, entry_price: ${decision.entry_price})`;
+      console.error(`[ASTER Execution] ❌ ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
 
+    // Cap leverage at 10x for safety
+    const safeLeverage = Math.min(Math.max(decision.leverage, 1), 10);
+    
     console.log(`[ASTER Execution] Opening SHORT position:`, {
       symbol,
       quantity,
       entry_price: decision.entry_price,
       size_usd: decision.size_usd,
-      leverage: decision.leverage > 10 ? 10 : decision.leverage,
+      leverage: safeLeverage,
+      originalLeverage: decision.leverage,
     });
 
     // Set leverage first
     await AsterClient.changeInitialLeverage(
       symbol,
-      decision.leverage > 10 ? 10 : decision.leverage,
+      safeLeverage,
       credentials
     );
 

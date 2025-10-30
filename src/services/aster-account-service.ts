@@ -63,24 +63,50 @@ export async function fetchAgentAccountData(agent: Agent): Promise<{
     while (retryCount < maxRetries) {
       try {
         balances = await AsterClient.getAccountBalance(credentials);
+        
+        // Validate response
+        if (!balances || !Array.isArray(balances)) {
+          throw new Error(`Invalid balance response format: ${typeof balances}`);
+        }
+        
+        console.log(`[ASTER Service] ✅ Balance fetched successfully (${balances.length} assets)`);
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
+        
+        // Check if it's a JSON parse error
+        const isJsonError = errorMsg.includes('JSON') || errorMsg.includes('parse') || errorMsg.includes('unexpected');
 
         if (retryCount >= maxRetries) {
           console.error(
-            `[ASTER Service] Failed to fetch balance after ${maxRetries} retries:`,
+            `[ASTER Service] ❌ Failed to fetch balance after ${maxRetries} retries:`,
             errorMsg
           );
-          throw error;
+          
+          // Set connection status to failed
+          store.setAgentConnectionStatus(
+            agent.id,
+            false,
+            `Balance fetch failed: ${isJsonError ? 'Invalid API response' : errorMsg}`
+          );
+          
+          return { 
+            success: false, 
+            error: `Failed to fetch account data: ${isJsonError ? 'API returned invalid response (possible rate limit or server issue)' : errorMsg}` 
+          };
         }
 
+        // Longer backoff for JSON errors (likely rate limit or server issue)
+        const backoffTime = isJsonError ? retryCount * 2000 : retryCount * 1000;
+        
         console.warn(
-          `[ASTER Service] Balance fetch failed (attempt ${retryCount}/${maxRetries}), retrying in ${retryCount}s...`
+          `[ASTER Service] ⚠️ Balance fetch failed (attempt ${retryCount}/${maxRetries})${isJsonError ? ' [JSON ERROR]' : ''}, retrying in ${backoffTime}ms...`
         );
-        await new Promise((resolve) => setTimeout(resolve, retryCount * 1000)); // Exponential backoff
+        console.warn(`[ASTER Service] Error details:`, errorMsg);
+        
+        await new Promise((resolve) => setTimeout(resolve, backoffTime));
       }
     }
 
