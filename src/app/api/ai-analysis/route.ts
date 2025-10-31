@@ -220,17 +220,31 @@ export async function POST(request: NextRequest) {
     // 8. Parse JSON response from AI
     let parsedDecision;
     try {
-      parsedDecision =
-        typeof aiDecision === "string"
-          ? JSON.parse(
-              aiDecision.startsWith("```json") && aiDecision.endsWith("```")
-                ? aiDecision
-                    .replace(/```json\s*/g, "")
-                    .replace(/```/g, "")
-                    .trim()
-                : aiDecision
-            )
-          : aiDecision;
+      let cleanedDecision = typeof aiDecision === "string" ? aiDecision : JSON.stringify(aiDecision);
+      
+      // Remove DeepSeek's thinking tags (e.g., </think>, <think>, etc.)
+      cleanedDecision = cleanedDecision.replace(/<\/?think>/g, "");
+      
+      // Remove markdown code blocks
+      if (cleanedDecision.includes("```json") || cleanedDecision.includes("```")) {
+        cleanedDecision = cleanedDecision
+          .replace(/```json\s*/g, "")
+          .replace(/```\s*/g, "")
+          .trim();
+      }
+      
+      // Trim whitespace and newlines
+      cleanedDecision = cleanedDecision.trim();
+      
+      // Find JSON object boundaries if there's extra text
+      const jsonStart = cleanedDecision.indexOf('{');
+      const jsonEnd = cleanedDecision.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+        cleanedDecision = cleanedDecision.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      parsedDecision = JSON.parse(cleanedDecision);
     } catch (parseError) {
       console.error("[AI-Analysis] Failed to parse AI response:", aiDecision);
       return NextResponse.json(
