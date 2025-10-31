@@ -527,25 +527,34 @@ function DecisionCard({ decision }: { decision: any }) {
     close: "text-slate-300",
   };
 
-  // Handle null/undefined signal
-  const signalColor = decision.signal ? (signalColors[decision.signal] || "text-white") : "text-white";
+  // Guard against null/undefined decision and normalize fields
+  if (!decision || typeof decision !== "object") {
+    return null; // Skip rendering invalid decision
+  }
+
+  const signal: string | undefined =
+    typeof decision.signal === "string" ? decision.signal : undefined;
+  const coin: string = typeof decision.coin === "string" ? decision.coin : "";
+
+  // Resolve color safely based on signal
+  const signalColor = (signal && signalColors[signal]) || "text-white";
 
   return (
     <div className="bg-gray-600/30 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <Image
-            src={getCoinIcon(decision.coin)}
-            alt={`${decision.coin} icon`}
+            src={getCoinIcon(coin)}
+            alt={`${coin} icon`}
             width={20}
             height={20}
             className="rounded-full"
           />
-          <span className="text-sm font-bold text-white">{decision.coin}</span>
+          <span className="text-sm font-bold text-white">{coin}</span>
           <span
             className={`text-xs font-bold uppercase px-auto py-0.5 rounded ${signalColor}`}
           >
-            ({decision.signal})
+            ({signal || "N/A"})
           </span>
         </div>
         <div className="text-xs text-slate-400">
@@ -555,10 +564,10 @@ function DecisionCard({ decision }: { decision: any }) {
         </div>
       </div>
 
-      {decision.signal !== "wait" && decision.entry_price > 0 && (
+      {signal !== "wait" && decision.entry_price > 0 && (
         <div className="text-xs text-slate-400 space-y-1">
           <div>Entry: ${decision.entry_price?.toFixed(2) || "N/A"}</div>
-          {decision.signal !== "hold" && decision.signal !== "close" && (
+          {signal !== "hold" && signal !== "close" && (
             <>
               <div>
                 TP: ${decision.profit_target?.toFixed(2) || "N/A"} | SL: $
@@ -579,7 +588,7 @@ function DecisionCard({ decision }: { decision: any }) {
         </div>
       )}
 
-      {decision.invalidation_condition && decision.signal !== "wait" && (
+      {decision.invalidation_condition && signal !== "wait" && (
         <div className="mt-2 text-xs text-slate-400">
           Exit Strategy: {decision.invalidation_condition}
         </div>
