@@ -527,7 +527,8 @@ function DecisionCard({ decision }: { decision: any }) {
     close: "text-slate-300",
   };
 
-  const signalColor = signalColors[decision.signal] || "text-white";
+  // Handle null/undefined signal
+  const signalColor = decision.signal ? (signalColors[decision.signal] || "text-white") : "text-white";
 
   return (
     <div className="bg-gray-600/30 rounded-lg p-3">
