@@ -61,6 +61,10 @@ interface AIMLRequest {
   balance: number;
   availableCapital: number;
   previousSummary?: any; // Previous analysis for context continuity
+  // Agent performance metrics
+  roi?: number;
+  winRate?: number;
+  totalTrades?: number;
 }
 
 export async function POST(request: NextRequest) {
@@ -85,6 +89,9 @@ export async function POST(request: NextRequest) {
       balance,
       availableCapital,
       previousSummary,
+      roi,
+      winRate,
+      totalTrades,
     } = body;
 
     // 3. Validate required fields
@@ -123,7 +130,10 @@ export async function POST(request: NextRequest) {
       activePositions,
       balance,
       availableCapital,
-      previousSummary
+      previousSummary,
+      roi,
+      winRate,
+      totalTrades
     );
 
     // 5. Call AIML API
@@ -282,7 +292,10 @@ function buildUserPrompt(
   activePositions: any[] = [],
   balance: number,
   availableCapital: number,
-  previousSummary?: any
+  previousSummary?: any,
+  roi?: number,
+  winRate?: number,
+  totalTrades?: number
 ): string {
   let prompt = "";
 
@@ -419,6 +432,21 @@ function buildUserPrompt(
   prompt += `Available Capital: $${availableCapital.toFixed(2)}\n`;
   prompt += `Active Positions: ${activePositions.length}\n\n`;
 
+  // Add performance metrics if available
+  if (roi !== undefined || winRate !== undefined || totalTrades !== undefined) {
+    prompt += `=== YOUR PERFORMANCE METRICS ===\n`;
+    if (totalTrades !== undefined) {
+      prompt += `Total Trades: ${totalTrades}\n`;
+    }
+    if (winRate !== undefined) {
+      prompt += `Win Rate: ${winRate.toFixed(2)}%\n`;
+    }
+    if (roi !== undefined) {
+      prompt += `ROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\n`;
+    }
+    prompt += `\n`;
+  }
+
   // Add active positions if any
   if (activePositions.length > 0) {
     prompt += `=== YOUR ACTIVE POSITIONS ===\n\n`;
@@ -427,6 +455,28 @@ function buildUserPrompt(
       const entryPrice = pos.entry_price;
       const takeProfit = pos.take_profit;
       const stopLoss = pos.stop_loss;
+      
+      let holdDuration = "";
+      const exitStrategy = pos.exit_strategy;
+
+      if(exitStrategy) {
+        const cleanExitStrategy = exitStrategy.replace("Duration:", "").trim();
+        holdDuration = cleanExitStrategy.split(",")[0];
+
+        if(holdDuration){
+          if(holdDuration.endsWith("s")){
+            holdDuration = holdDuration.replaceAll("s", " seconds");
+          }else if(holdDuration.endsWith("m")){
+            holdDuration = holdDuration.replaceAll("m", " minutes");
+          }else if(holdDuration.endsWith("min")){
+            holdDuration = holdDuration.replaceAll("m", " minutes");
+          }else if(holdDuration.endsWith("h")){
+            holdDuration = holdDuration.replaceAll("h", " hours");
+          }else if(holdDuration.endsWith("d")){
+            holdDuration = holdDuration.replaceAll("d", " days");
+          }
+        }
+      }
 
       // Calculate PnL to make entry vs current distinction crystal clear
       const pnlPercent =
@@ -450,7 +500,7 @@ function buildUserPrompt(
       }
 
       prompt += `========================================\n`;
-      prompt += `POSITION ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
+      prompt += `ACTIVE POSITION ${idx + 1}: ${pos.symbol} ${pos.side}\n`;
       prompt += `========================================\n`;
       prompt += `  ENTRY PRICE (when opened): $${entryPrice.toFixed(2)}\n`;
       prompt += `  CURRENT MARKET PRICE (now): $${currentPrice.toFixed(2)}\n`;
@@ -468,6 +518,10 @@ function buildUserPrompt(
       }\n`;
       prompt += `  Invalidation Condition: ${pos.invalidation_condition}\n`;
       prompt += `  Exit Strategy: ${pos.exit_strategy}\n`;
+      
+      if(holdDuration) {
+        prompt += `  Hold Duration: ${holdDuration}\n`;
+      }
 
       // Add informational note if TP or SL hit
       if (tpHit || slHit) {

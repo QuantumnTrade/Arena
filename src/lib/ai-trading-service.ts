@@ -121,6 +121,10 @@ export async function executeAITrading(agent: Agent): Promise<TradingResult> {
         balance: agent.balance || 0, // Default to 0 if null
         availableCapital: agent.available_capital || agent.balance || 0, // Default to 0 if null
         previousSummary, // Include previous analysis for context
+        // Agent performance metrics
+        roi: agent.roi,
+        winRate: agent.win_rate,
+        totalTrades: agent.trade_count,
       }),
     });
 
